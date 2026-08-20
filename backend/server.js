@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
@@ -62,34 +62,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ============ DATABASE CONNECTION ============
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-});
 
-const connectWithRetry = () => {
-  pool.connect((err) => {
-    if (err) {
-      console.error('❌ Database connection error:', err.message);
-      console.log('🔄 Retrying connection in 5 seconds...');
-      setTimeout(connectWithRetry, 5000);
-    } else {
-      console.log('✅ Connected to PostgreSQL database');
-    }
-  });
-};
-
-connectWithRetry();
-
-pool.on('error', (err) => {
-  console.error('❌ Database pool error:', err.message);
-  console.log('🔄 Attempting to reconnect...');
-  setTimeout(connectWithRetry, 5000);
-});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel_finder_super_secret_key_2026';
 

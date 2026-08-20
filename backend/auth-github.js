@@ -1,17 +1,10 @@
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
-const { Pool } = require('pg');
+const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'hostel_finder',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'rockstar',
-});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel_finder_super_secret_key_2026';
 

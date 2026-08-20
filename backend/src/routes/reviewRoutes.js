@@ -1,16 +1,10 @@
 // backend/src/routes/reviewRoutes.js
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
+const pool = require('../config/database');
 require('dotenv').config();
 
-const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'hostel_finder',
-    password: process.env.DB_PASSWORD || 'rockstar',
-    port: process.env.DB_PORT || 5432,
-});
+
 
 // ============================================
 // ✅ GET ALL REVIEWS
