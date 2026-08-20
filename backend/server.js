@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const pool = require('../config/database');
+const pool = require('./src/config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const session = require('express-session');
