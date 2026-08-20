@@ -35,10 +35,13 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'https://your-frontend-url.vercel.app',
-        'https://your-frontend-url.netlify.app'
+        'https://your-frontend-url.netlify.app',
+        'https://hostel-finder-backend-sxh0.onrender.com'  // ← Add your Render URL too
     ],
-    credentials: true
-}));
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));  // ✅ Fixed - added closing parenthesis
 app.use(express.json());
 
 // ✅ MUST HAVE THIS
