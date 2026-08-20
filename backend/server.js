@@ -70,19 +70,19 @@ app.use(passport.session());
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel_finder_super_secret_key_2026';
 
 // ============ AUTH FUNCTIONS ============
-async function registerUser(email, password, full_name, role = 'student') {
+async function registerUser(email, password, full_name, phone, role = 'student') {
   const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
   if (existingUser.rows.length > 0) {
     throw new Error('User already exists');
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const result = await pool.query(
-    `INSERT INTO users (email, password_hash, full_name, role)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, email, full_name, role, created_at`,
-    [email, hashedPassword, full_name, role]
-  );
+const result = await pool.query(
+  `INSERT INTO users (email, password_hash, full_name, phone, role)
+   VALUES ($1, $2, $3, $4, $5)
+   RETURNING id, email, full_name, phone, role, created_at`,
+  [email, hashedPassword, full_name, phone, role]
+);
 
   return result.rows[0];
 }
@@ -162,18 +162,18 @@ app.get('/api/health', (req, res) => {
 
 // REGISTER
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password, full_name, role } = req.body;
+  const { email, password, full_name, phone, role } = req.body;
   
-  if (!email || !password || !full_name) {
-    return res.status(400).json({ error: 'Email, password, and full name are required' });
-  }
+  if (!email || !password || !full_name || !phone) {
+  return res.status(400).json({ error: 'Email, password, full name, and phone are required' });
+}
   
   if (password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
   try {
-    const user = await registerUser(email, password, full_name, role);
+    const user = await registerUser(email, password, full_name, phone, role);
     res.status(201).json({ message: 'User created successfully', user });
   } catch (err) {
     res.status(400).json({ error: err.message });
