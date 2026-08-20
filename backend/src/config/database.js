@@ -8,10 +8,10 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'hostel_finder',
   password: process.env.DB_PASSWORD || 'rockstar',
   port: process.env.DB_PORT || 5432,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
 // Test connection
