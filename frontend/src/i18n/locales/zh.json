@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "宿舍查找器"
+  },
+  "nav": {
+    "location": "位置",
+    "logout": "注销",
+    "login": "登录"
+  },
+  "offer": {
+    "title": "特别优惠",
+    "description": "首次预订可享受高达40%的折扣",
+    "claim": "立即领取"
+  },
+  "popular": {
+    "title": "热门空间",
+    "seeAll": "查看全部"
+  },
+  "search": {
+    "placeholder": "搜索任何地方..."
+  },
+  "hostel": {
+    "bookNow": "立即预订",
+    "noDescription": "没有可用的描述"
+  }
+}

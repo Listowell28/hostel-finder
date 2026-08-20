@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Hostel-Suche"
+  },
+  "nav": {
+    "location": "Standort",
+    "logout": "Abmelden",
+    "login": "Anmelden"
+  },
+  "offer": {
+    "title": "Sonderangebot",
+    "description": "Erhalten Sie bis zu 40% Rabatt auf Ihre erste Buchung",
+    "claim": "Jetzt Anfordern"
+  },
+  "popular": {
+    "title": "Beliebte Orte",
+    "seeAll": "Alle Anzeigen"
+  },
+  "search": {
+    "placeholder": "Suche nach Ort..."
+  },
+  "hostel": {
+    "bookNow": "Jetzt Buchen",
+    "noDescription": "Keine Beschreibung verfügbar"
+  }
+}

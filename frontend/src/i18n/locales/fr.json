@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Recherche d'Auberge"
+  },
+  "nav": {
+    "location": "Emplacement",
+    "logout": "Déconnexion",
+    "login": "Connexion"
+  },
+  "offer": {
+    "title": "Offre Spéciale",
+    "description": "Obtenez jusqu'à 40% de réduction sur votre première réservation",
+    "claim": "Réclamer Maintenant"
+  },
+  "popular": {
+    "title": "Espaces Populaires",
+    "seeAll": "Voir Tout"
+  },
+  "search": {
+    "placeholder": "Rechercher un endroit..."
+  },
+  "hostel": {
+    "bookNow": "Réserver Maintenant",
+    "noDescription": "Aucune description disponible"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Hostel Finder"
+  },
+  "nav": {
+    "location": "Location",
+    "logout": "Logout",
+    "login": "Login"
+  },
+  "offer": {
+    "title": "Special Offer",
+    "description": "Get up to 40% off on your first booking",
+    "claim": "Claim Now"
+  },
+  "popular": {
+    "title": "Popular Spaces",
+    "seeAll": "See All"
+  },
+  "search": {
+    "placeholder": "Search any place..."
+  },
+  "hostel": {
+    "bookNow": "Book Now",
+    "noDescription": "No description available"
+  }
+}

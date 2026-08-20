@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "Buscador de Hostales"
+  },
+  "nav": {
+    "location": "Ubicación",
+    "logout": "Cerrar Sesión",
+    "login": "Iniciar Sesión"
+  },
+  "offer": {
+    "title": "Oferta Especial",
+    "description": "Obtén hasta 40% de descuento en tu primera reserva",
+    "claim": "Reclamar Ahora"
+  },
+  "popular": {
+    "title": "Espacios Populares",
+    "seeAll": "Ver Todos"
+  },
+  "search": {
+    "placeholder": "Buscar cualquier lugar..."
+  },
+  "hostel": {
+    "bookNow": "Reservar Ahora",
+    "noDescription": "Sin descripción disponible"
+  }
+}
