@@ -25,24 +25,22 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: 'https://hostel-finder-xi.vercel.app',
     credentials: true
   }
 });
 
 // ============ MIDDLEWARE ============
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://your-frontend-url.vercel.app',
-        'https://your-frontend-url.netlify.app',
-        'https://hostel-finder-backend-sxh0.onrender.com'  // ← Add your Render URL too
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));  // ✅ Fixed - added closing parenthesis
-app.use(express.json());
+  origin: [
+    'http://localhost:5173',
+    'https://hostel-finder-xi.vercel.app',
+    'https://hostel-finder-backend-sxh0.onrender.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // ✅ MUST HAVE THIS
 const bookingRoutes = require('./src/routes/bookingRoutes');
