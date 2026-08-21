@@ -54,7 +54,7 @@ import { Menu, MenuItem } from '@mui/material';
 
 // ===== IMPORT COMPONENTS =====
 import Login from './login';
-import AddHostel from './addhostel';
+import AddHostel from './AddHostel';
 import MyBookings from './MyBookings';
 import Reviews from './reviews';
 import AdminDashboard from './AdminDashboard';
