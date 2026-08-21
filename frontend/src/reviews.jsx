@@ -11,7 +11,7 @@ import {
   ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function Reviews({ hostelId }) {
   const [reviews, setReviews] = useState([]);

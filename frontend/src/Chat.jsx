@@ -12,7 +12,7 @@ import {
 } from '@mui/icons-material';
 import io from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function Chat({ currentUser, onClose }) {
   const [socket, setSocket] = useState(null);

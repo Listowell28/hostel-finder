@@ -9,7 +9,7 @@ function PaystackPayment({ bookingId, amount, email, onSuccess, onCancel }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const API_URL = 'http://localhost:5000';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handlePay = async () => {
     setLoading(true);

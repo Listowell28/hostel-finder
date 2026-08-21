@@ -23,6 +23,7 @@ function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [user, setUser] = useState(null);
   const [location, setLocation] = useState('Kumasi, Tanoso');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // Booking dialog states
   const [bookingDialog, setBookingDialog] = useState(null);
@@ -43,7 +44,7 @@ function HomePage() {
 
   const fetchHostels = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/hostels');
+      const res = await fetch(`${API_URL}/api/hostels`);
       const data = await res.json();
       setHostels(data);
       setLoading(false);

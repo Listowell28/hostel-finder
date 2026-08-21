@@ -22,8 +22,9 @@ function Login({ onLogin }) {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState('');
 
-  const API_URL = 'http://localhost:5000';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,10 +32,11 @@ function Login({ onLogin }) {
     setSuccess('');
     setLoading(true);
 
-    const endpoint = isLogin ? 'login' : 'register';
-    const body = isLogin
-      ? { email, password }
-      : { email, password, full_name: fullName };
+   const endpoint = isLogin ? 'login' : 'register';
+
+const body = isLogin
+  ? { email, password }
+  : { email, password, full_name: fullName, phone };
 
     try {
       const res = await fetch(`${API_URL}/api/auth/${endpoint}`, {
@@ -125,15 +127,27 @@ function Login({ onLogin }) {
 
         <form onSubmit={handleSubmit}>
           {!isLogin && (
-            <TextField
-              fullWidth
-              label="Full Name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              sx={{ mb: 2.5 }}
-            />
-          )}
+  <TextField
+    fullWidth
+    label="Full Name"
+    value={fullName}
+    onChange={(e) => setFullName(e.target.value)}
+    required
+    sx={{ mb: 2.5 }}
+  />
+)}
+
+{!isLogin && (
+  <TextField
+    fullWidth
+    label="Phone Number"
+    type="tel"
+    value={phone}
+    onChange={(e) => setPhone(e.target.value)}
+    required
+    sx={{ mb: 2.5 }}
+  />
+)}
 
           <TextField
             fullWidth

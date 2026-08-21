@@ -67,7 +67,7 @@ import Chat from './Chat';
 import HostelDetails from './HostelDetails';
 import LoadingScreen from './components/LoadingScreen';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // ============================================
 // BACK TO HOME BUTTON

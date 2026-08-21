@@ -172,14 +172,16 @@ function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) 
       {/* ✅ FIXED: Image Preview with Full URL */}
       {images.length > 0 && (
         <ImageList cols={3} rowHeight={150} sx={{ mt: 2 }}>
-          {images.map((image, index) => {
-            // ✅ Build full URL for preview
-            const imageUrl = image && image.startsWith('/uploads') 
-              ? `http://localhost:5000${image}` 
-              : image;
-            
-            return (
-              <ImageListItem key={index} sx={{ position: 'relative' }}>
+              {images.map((image, index) => {
+  // Build full URL for preview
+       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+       const imageUrl = image && image.startsWith('/uploads')
+       ? `${API_URL}${image}`
+       : image;
+
+     return (
+     <ImageListItem key={index} sx={{ position: 'relative' }}>
+      ...
                 <img
                   src={imageUrl}
                   alt={`Hostel image ${index + 1}`}
