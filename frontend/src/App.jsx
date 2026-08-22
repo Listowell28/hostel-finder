@@ -284,16 +284,17 @@ function HomePage() {
 // ✅ LUXURY HOSTEL CARD - MATCHING THE IMAGE STYLE
 // ============================================
 const HostelCard = ({ hostel }) => {
-  // ✅ FIXED: Add API_URL using environment variable
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
   const getImageUrl = () => {
     if (hostel.images && hostel.images.length > 0) {
       const img = hostel.images[0];
-      // ✅ FIXED: capital 'S' in startsWith
-      if (img.startsWith('http')) return img;
-      // ✅ FIXED: Use API_URL instead of hardcoded localhost
-      if (img.startsWith('/uploads')) return `${API_URL}${img}`;
+      // If it's already a full URL (Supabase Storage)
+      if (img.startsWith('http://') || img.startsWith('https://')) {
+        return img;
+      }
+      // If it's a relative path
+      if (img.startsWith('/uploads')) {
+        return ${API_URL}${img};
+      }
       return img;
     }
     return null;

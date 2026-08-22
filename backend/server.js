@@ -682,52 +682,47 @@ app.delete('/api/reviews/:id', authenticate, async (req, res) => {
 // ============================================
 
 // Import upload
-const { upload, uploadMultiple } = require('./upload');
+const { upload, uploadMultiple, uploadToSupabase } = require('./upload');
 
-// Upload multiple images
 app.post('/api/upload/multiple', authenticate, async (req, res) => {
-    try {
-        // Use multer to handle upload
-        uploadMultiple(req, res, async function(err) {
-            if (err) {
-                console.error('❌ Multer error:', err);
-                return res.status(400).json({ 
-                    error: err.message || 'Upload failed' 
-                });
-            }
+  try {
+    uploadMultiple(req, res, async function(err) {
+      if (err) {
+        console.error('❌ Multer error:', err);
+        return res.status(400).json({ error: err.message || 'Upload failed' });
+      }
 
-            if (!req.files || req.files.length === 0) {
-                return res.status(400).json({ error: 'No images uploaded' });
-            }
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No images uploaded' });
+      }
 
-            // Build image URLs
-            const uploadedImages = req.files.map(file => {
-                // Return the file path or URL
-                return {
-                    url: `/uploads/${file.filename}`,
-                    publicId: file.filename,
-                    filename: file.filename
-                };
-            });
+      const uploadedImages = [];
+      for (const file of req.files) {
+        try {
+          const publicUrl = await uploadToSupabase(file);
+          uploadedImages.push({
+            url: publicUrl,
+            filename: file.originalname
+          });
+        } catch (uploadError) {
+          console.error('❌ Upload to Supabase failed:', uploadError);
+        }
+      }
 
-            console.log(`✅ Uploaded ${uploadedImages.length} images`);
-            
-            res.status(200).json({
-                success: true,
-                message: `${req.files.length} images uploaded successfully`,
-                images: uploadedImages,
-                imageUrls: uploadedImages.map(img => img.url)
-            });
-        });
-
-    } catch (err) {
-        console.error('❌ Upload error:', err);
-        res.status(500).json({ error: err.message || 'Upload failed' });
-    }
+      console.log(`✅ Uploaded ${uploadedImages.length} images to Supabase`);
+      
+      res.status(200).json({
+        success: true,
+        message: `${uploadedImages.length} images uploaded successfully`,
+        images: uploadedImages,
+        imageUrls: uploadedImages.map(img => img.url)
+      });
+    });
+  } catch (err) {
+    console.error('❌ Upload error:', err);
+    res.status(500).json({ error: err.message || 'Upload failed' });
+  }
 });
-
-// Serve static files (for uploaded images)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============ PAYSTACK PAYMENT ROUTES ============
 

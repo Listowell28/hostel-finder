@@ -1,46 +1,52 @@
-// backend/upload.js
 const multer = require('multer');
+const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
-const fs = require('fs');
 
-// Create uploads folder if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Initialize Supabase
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
-// Configure storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Configure multer for memory storage (temporary)
+const storage = multer.memoryStorage();
 
-// File filter
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Invalid file type. Only JPG, PNG, GIF, WebP are allowed.'), false);
-    }
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPG, PNG, GIF, WebP allowed.'), false);
+  }
 };
 
-// Create upload middleware
 const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB
-    },
-    fileFilter: fileFilter
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Upload multiple images
 const uploadMultiple = upload.array('images', 10);
 
-// Export
-module.exports = { upload, uploadMultiple, uploadDir };
+// Upload to Supabase Storage
+const uploadToSupabase = async (file) => {
+  const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+  
+  const { data, error } = await supabase.storage
+    .from('hostel-images')
+    .upload(fileName, file.buffer, {
+      contentType: file.mimetype,
+      cacheControl: '3600'
+    });
+
+  if (error) throw error;
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('hostel-images')
+    .getPublicUrl(fileName);
+
+  return publicUrl;
+};
+
+module.exports = { upload, uploadMultiple, uploadToSupabase };
