@@ -1439,22 +1439,31 @@ const HostelCard = ({ hostel }) => {
       {/* Chat Button */}
       {user && (
         <IconButton
-          onClick={() => setChatOpen(true)}
-          sx={{
-            bgcolor: '#e94560',
-            color: 'white',
-            '&:hover': { bgcolor: '#c73652' },
-            position: 'fixed',
-            bottom: 30,
-            right: 30,
-            zIndex: 999,
-            width: 56,
-            height: 56,
-            boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
-          }}
-        >
-          <ChatIcon />
-        </IconButton>
+  onClick={() => setChatOpen(true)}
+  sx={{ 
+    bgcolor: '#e94560',
+    color: 'white',
+    '&:hover': { bgcolor: '#c73652' },
+    position: 'fixed',
+    // ✅ Responsive positioning
+    bottom: { xs: 16, sm: 24, md: 30 },
+    right: { xs: 16, sm: 24, md: 30 },
+    zIndex: 999,
+    // ✅ Responsive sizing
+    width: { xs: 48, sm: 56, md: 56 },
+    height: { xs: 48, sm: 56, md: 56 },
+    boxShadow: '0 4px 20px rgba(233,69,96,0.4)',
+    '&:hover': {
+      transform: 'scale(1.05)'
+    },
+    // ✅ Make sure it's always visible
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }}
+>
+  <ChatIcon sx={{ fontSize: { xs: 24, sm: 28, md: 28 } }} />
+</IconButton>
       )}
       {chatOpen && user && <Chat currentUser={user} onClose={() => setChatOpen(false)} />}
 
