@@ -281,376 +281,379 @@ function HomePage() {
   );
 
   // ============================================
-  // ✅ LUXURY HOSTEL CARD - MATCHING THE IMAGE STYLE
-  // ============================================
-  const HostelCard = ({ hostel }) => {
-    const getImageUrl = () => {
-      if (hostel.images && hostel.images.length > 0) {
-        const img = hostel.images[0];
-        if (img.startsWith('http')) return img;
-        if (img.startsWith('/uploads')) return `http://localhost:5000${img}`;
-        return img;
-      }
-      return null;
-    };
+// ✅ LUXURY HOSTEL CARD - MATCHING THE IMAGE STYLE
+// ============================================
+const HostelCard = ({ hostel }) => {
+  // ✅ FIXED: Add API_URL using environment variable
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-    // Generate random amenities for display (since we want to show luxury features)
-    const displayAmenities = hostel.amenities && hostel.amenities.length > 0 
-      ? hostel.amenities 
-      : ['Free WiFi', 'Parking', 'Air Conditioning', 'TV', 'Kitchen'];
+  const getImageUrl = () => {
+    if (hostel.images && hostel.images.length > 0) {
+      const img = hostel.images[0];
+      // ✅ FIXED: capital 'S' in startsWith
+      if (img.startsWith('http')) return img;
+      // ✅ FIXED: Use API_URL instead of hardcoded localhost
+      if (img.startsWith('/uploads')) return `${API_URL}${img}`;
+      return img;
+    }
+    return null;
+  };
 
-    // Get room count from hostel data or generate random
-    const roomCount = hostel.rooms?.length || Math.floor(Math.random() * 5) + 1;
-    const bathroomCount = Math.floor(roomCount / 2) + 1;
-    const sqft = (roomCount * 150) + 50;
+  // Generate random amenities for display (since we want to show luxury features)
+  const displayAmenities = hostel.amenities && hostel.amenities.length > 0 
+    ? hostel.amenities 
+    : ['Free WiFi', 'Parking', 'Air Conditioning', 'TV', 'Kitchen'];
 
-    return (
-      <Card
-        onClick={() => navigate(`/hostel/${hostel.id}`)}
-        sx={{
-          borderRadius: 4,
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: 'pointer',
-          height: 420,
-          display: 'flex',
-          flexDirection: 'column',
-          bgcolor: darkMode ? '#1e1e1e' : '#ffffff',
-          position: 'relative',
-          '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
-            '& .hostel-image-overlay': {
-              opacity: 1,
-            }
+  // Get room count from hostel data or generate random
+  const roomCount = hostel.rooms?.length || Math.floor(Math.random() * 5) + 1;
+  const bathroomCount = Math.floor(roomCount / 2) + 1;
+  const sqft = (roomCount * 150) + 50;
+
+  return (
+    <Card
+      onClick={() => navigate(`/hostel/${hostel.id}`)}
+      sx={{
+        borderRadius: 4,
+        overflow: 'hidden',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'pointer',
+        height: 420,
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: darkMode ? '#1e1e1e' : '#ffffff',
+        position: 'relative',
+        '&:hover': {
+          transform: 'translateY(-8px)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+          '& .hostel-image-overlay': {
+            opacity: 1,
           }
-        }}
-      >
-        {/* ✅ IMAGE - 200px height with overlay gradient */}
-        <Box sx={{ 
-          position: 'relative', 
-          height: 200,
-          flexShrink: 0,
-          bgcolor: darkMode ? '#2d2d2d' : '#f0f2f5',
-          overflow: 'hidden'
-        }}>
-          {getImageUrl() ? (
-            <>
-              <img
-                src={getImageUrl()}
-                alt={hostel.name}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  transition: 'transform 0.5s ease'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-              {/* Gradient Overlay */}
-              <Box
-                className="hostel-image-overlay"
+        }
+      }}
+    >
+      {/* ✅ IMAGE - 200px height with overlay gradient */}
+      <Box sx={{ 
+        position: 'relative', 
+        height: 200,
+        flexShrink: 0,
+        bgcolor: darkMode ? '#2d2d2d' : '#f0f2f5',
+        overflow: 'hidden'
+      }}>
+        {getImageUrl() ? (
+          <>
+            <img
+              src={getImageUrl()}
+              alt={hostel.name}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transition: 'transform 0.5s ease'
+              }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+            {/* Gradient Overlay */}
+            <Box
+              className="hostel-image-overlay"
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)',
+                opacity: 0,
+                transition: 'opacity 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Button
+                variant="contained"
+                size="medium"
                 sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)',
-                  opacity: 0,
-                  transition: 'opacity 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  bgcolor: '#e94560',
+                  borderRadius: 50,
+                  px: 4,
+                  py: 1,
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: '#c73652' }
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/hostel/${hostel.id}`);
                 }}
               >
-                <Button
-                  variant="contained"
-                  size="medium"
-                  sx={{
-                    bgcolor: '#e94560',
-                    borderRadius: 50,
-                    px: 4,
-                    py: 1,
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    '&:hover': { bgcolor: '#c73652' }
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/hostel/${hostel.id}`);
-                  }}
-                >
-                  View Details
-                </Button>
-              </Box>
-            </>
-          ) : (
-            <Box sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: darkMode ? '#2d2d2d' : '#f0f2f5'
-            }}>
-              <HotelIcon sx={{ fontSize: 60, color: darkMode ? '#444' : '#ccc' }} />
+                View Details
+              </Button>
             </Box>
-          )}
+          </>
+        ) : (
+          <Box sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: darkMode ? '#2d2d2d' : '#f0f2f5'
+          }}>
+            <HotelIcon sx={{ fontSize: 60, color: darkMode ? '#444' : '#ccc' }} />
+          </Box>
+        )}
 
-          
+        {/* Price Badge - Large and prominent */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: 16,
+            bgcolor: 'rgba(0,0,0,0.75)',
+            color: 'white',
+            px: 2,
+            py: 1,
+            borderRadius: 4,
+            fontWeight: 700,
+            fontSize: '15px',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 0.2
+          }}
+        >
+          GH₵{hostel.price_per_year || 100}
+          <Typography
+            component="span"
+            sx={{
+              fontSize: '15px',
+              fontWeight: 400,
+              color: 'rgba(255,255,255,0.7)',
+              ml: 0.5
+            }}
+          >
+            / year
+          </Typography>
+        </Box>
 
-          {/* Price Badge - Large and prominent */}
+        {/* Rating Badge */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            bgcolor: 'rgba(0,0,0,0.75)',
+            color: '#ffd700',
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 2,
+            fontSize: '12px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+          }}
+        >
+          <StarIcon sx={{ fontSize: 14, color: '#ffd700' }} />
+          {hostel.rating || '4.9'}
+        </Box>
+
+        {/* Available Badge */}
+        {hostel.available !== false && (
           <Box
             sx={{
               position: 'absolute',
               bottom: 16,
-              left: 16,
-              bgcolor: 'rgba(0,0,0,0.75)',
-              color: 'white',
-              px: 2,
-              py: 1,
-              borderRadius: 4,
-              fontWeight: 700,
-              fontSize: '15px',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: 0.2
-            }}
-          >
-            GH₵{hostel.price_per_year || 100}
-            <Typography
-              component="span"
-              sx={{
-                fontSize: '15px',
-                fontWeight: 400,
-                color: 'rgba(255,255,255,0.7)',
-                ml: 0.5
-              }}
-            >
-              / year
-            </Typography>
-          </Box>
-
-          {/* Rating Badge */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 16,
               right: 16,
-              bgcolor: 'rgba(0,0,0,0.75)',
-              color: '#ffd700',
+              bgcolor: 'rgba(76,175,80,0.92)',
+              color: 'white',
               px: 1.5,
               py: 0.5,
               borderRadius: 2,
-              fontSize: '12px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
+              fontSize: '10px',
+              fontWeight: 600,
               backdropFilter: 'blur(4px)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
             }}
           >
-            <StarIcon sx={{ fontSize: 14, color: '#ffd700' }} />
-            {hostel.rating || '4.9'}
+            
           </Box>
+        )}
+      </Box>
 
-          {/* Available Badge */}
-          {hostel.available !== false && (
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 16,
-                right: 16,
-                bgcolor: 'rgba(76,175,80,0.92)',
-                color: 'white',
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 2,
-                fontSize: '10px',
-                fontWeight: 600,
-                backdropFilter: 'blur(4px)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}
-            >
-              
+      {/* ✅ CONTENT - Detailed room info like the image */}
+      <CardContent sx={{ 
+        p: 2.5,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        bgcolor: darkMode ? '#1e1e1e' : '#ffffff'
+      }}>
+        <Box>
+          {/* Room Title */}
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              color: darkMode ? 'white' : '#1a1a2e',
+              fontSize: '1.1rem',
+              mb: 0.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}
+          >
+            {hostel.name}
+          </Typography>
+
+          {/* Category/Type */}
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#e94560',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              display: 'block',
+              mb: 1
+            }}
+          >
+            {hostel.category || 'Deluxe Room'} • {hostel.type || 'Premium'}
+          </Typography>
+
+          {/* Room Specs - Like the image shows: 1 Bed, 1 Bath, 300 sqft */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2, 
+            alignItems: 'center',
+            mb: 1.5,
+            flexWrap: 'wrap'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <BedIcon sx={{ fontSize: 16, color: '#8892b0' }} />
+              <Typography variant="body2" sx={{ color: darkMode ? '#b0b0b0' : '#6b7a8f', fontSize: '0.85rem' }}>
+                {roomCount} {roomCount === 1 ? 'Bed' : 'Beds'}
+              </Typography>
             </Box>
-          )}
-        </Box>
-
-        {/* ✅ CONTENT - Detailed room info like the image */}
-        <CardContent sx={{ 
-          p: 2.5,
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          bgcolor: darkMode ? '#1e1e1e' : '#ffffff'
-        }}>
-          <Box>
-            {/* Room Title */}
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                color: darkMode ? 'white' : '#1a1a2e',
-                fontSize: '1.1rem',
-                mb: 0.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 1,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}
-            >
-              {hostel.name}
-            </Typography>
-
-            {/* Category/Type */}
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#e94560',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                display: 'block',
-                mb: 1
-              }}
-            >
-              {hostel.category || 'Deluxe Room'} • {hostel.type || 'Premium'}
-            </Typography>
-
-            {/* Room Specs - Like the image shows: 1 Bed, 1 Bath, 300 sqft */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 2, 
-              alignItems: 'center',
-              mb: 1.5,
-              flexWrap: 'wrap'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <BedIcon sx={{ fontSize: 16, color: '#8892b0' }} />
-                <Typography variant="body2" sx={{ color: darkMode ? '#b0b0b0' : '#6b7a8f', fontSize: '0.85rem' }}>
-                  {roomCount} {roomCount === 1 ? 'Bed' : 'Beds'}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <BathtubIcon sx={{ fontSize: 16, color: '#8892b0' }} />
-                <Typography variant="body2" sx={{ color: darkMode ? '#b0b0b0' : '#6b7a8f', fontSize: '0.85rem' }}>
-                  {bathroomCount} {bathroomCount === 1 ? 'Bath' : 'Baths'}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <SquareFootIcon sx={{ fontSize: 16, color: '#8892b0' }} />
-                <Typography variant="body2" sx={{ color: darkMode ? '#b0b0b0' : '#6b7a8f', fontSize: '0.85rem' }}>
-                  {sqft} sqft
-                </Typography>
-              </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <BathtubIcon sx={{ fontSize: 16, color: '#8892b0' }} />
+              <Typography variant="body2" sx={{ color: darkMode ? '#b0b0b0' : '#6b7a8f', fontSize: '0.85rem' }}>
+                {bathroomCount} {bathroomCount === 1 ? 'Bath' : 'Baths'}
+              </Typography>
             </Box>
-
-            {/* Amenities - Show as chips */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
-              {displayAmenities.slice(0, 4).map((amenity, i) => (
-                <Chip
-                  key={i}
-                  label={amenity}
-                  size="small"
-                  sx={{
-                    bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : '#f5f7fa',
-                    color: darkMode ? '#b0b0b0' : '#6b7a8f',
-                    fontSize: '0.65rem',
-                    height: 24,
-                    fontWeight: 500,
-                    borderRadius: 1.5,
-                    '& .MuiChip-label': { px: 1 }
-                  }}
-                />
-              ))}
-              {displayAmenities.length > 4 && (
-                <Chip
-                  label={`+${displayAmenities.length - 4}`}
-                  size="small"
-                  sx={{
-                    bgcolor: '#e94560',
-                    color: 'white',
-                    fontSize: '0.65rem',
-                    height: 24,
-                    fontWeight: 600,
-                    borderRadius: 1.5
-                  }}
-                />
-              )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <SquareFootIcon sx={{ fontSize: 16, color: '#8892b0' }} />
+              <Typography variant="body2" sx={{ color: darkMode ? '#b0b0b0' : '#6b7a8f', fontSize: '0.85rem' }}>
+                {sqft} sqft
+              </Typography>
             </Box>
           </Box>
 
-          {/* ✅ BOOK NOW BUTTON - Prominent and always visible */}
-          {user ? (
-            (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
-              <Button
-                fullWidth
-                variant="contained"
-                size="medium"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleBookNow(hostel);
+          {/* Amenities - Show as chips */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
+            {displayAmenities.slice(0, 4).map((amenity, i) => (
+              <Chip
+                key={i}
+                label={amenity}
+                size="small"
+                sx={{
+                  bgcolor: darkMode ? 'rgba(255,255,255,0.08)' : '#f5f7fa',
+                  color: darkMode ? '#b0b0b0' : '#6b7a8f',
+                  fontSize: '0.65rem',
+                  height: 24,
+                  fontWeight: 500,
+                  borderRadius: 1.5,
+                  '& .MuiChip-label': { px: 1 }
                 }}
+              />
+            ))}
+            {displayAmenities.length > 4 && (
+              <Chip
+                label={`+${displayAmenities.length - 4}`}
+                size="small"
                 sx={{
                   bgcolor: '#e94560',
-                  borderRadius: 50,
-                  py: 1.2,
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  textTransform: 'none',
-                  letterSpacing: '0.3px',
-                  '&:hover': { 
-                    bgcolor: '#c73652',
-                    boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
-                  },
-                  mt: 1
+                  color: 'white',
+                  fontSize: '0.65rem',
+                  height: 24,
+                  fontWeight: 600,
+                  borderRadius: 1.5
                 }}
-              >
-                ✦ Book Now
-              </Button>
-            )
-          ) : (
-            <Link to="/login" style={{ width: '100%', textDecoration: 'none' }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                size="medium"
-                sx={{
-                  borderRadius: 50,
-                  py: 1.2,
-                  borderColor: '#e94560',
-                  color: '#e94560',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  textTransform: 'none',
-                  '&:hover': {
-                    bgcolor: 'rgba(233,69,96,0.05)',
-                    borderColor: '#c73652',
-                    boxShadow: '0 4px 20px rgba(233,69,96,0.15)'
-                  },
-                  mt: 1
-                }}
-              >
-                Login to Book
-              </Button>
-            </Link>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
+              />
+            )}
+          </Box>
+        </Box>
+
+        {/* ✅ BOOK NOW BUTTON - Prominent and always visible */}
+        {user ? (
+          (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
+            <Button
+              fullWidth
+              variant="contained"
+              size="medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleBookNow(hostel);
+              }}
+              sx={{
+                bgcolor: '#e94560',
+                borderRadius: 50,
+                py: 1.2,
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                letterSpacing: '0.3px',
+                '&:hover': { 
+                  bgcolor: '#c73652',
+                  boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
+                },
+                mt: 1
+              }}
+            >
+              ✦ Book Now
+            </Button>
+          )
+        ) : (
+          <Link to="/login" style={{ width: '100%', textDecoration: 'none' }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              size="medium"
+              sx={{
+                borderRadius: 50,
+                py: 1.2,
+                borderColor: '#e94560',
+                color: '#e94560',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                '&:hover': {
+                  bgcolor: 'rgba(233,69,96,0.05)',
+                  borderColor: '#c73652',
+                  boxShadow: '0 4px 20px rgba(233,69,96,0.15)'
+                },
+                mt: 1
+              }}
+            >
+              Login to Book
+            </Button>
+          </Link>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
   // ============================================
   // THREE-DOT MENU ITEMS
