@@ -7,7 +7,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) {
   const [images, setImages] = useState(existingImages || []);
