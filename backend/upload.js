@@ -2,13 +2,11 @@ const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 
-// Initialize Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// Configure multer for memory storage (temporary)
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
@@ -16,7 +14,7 @@ const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPG, PNG, GIF, WebP allowed.'), false);
+    cb(new Error('Invalid file type'), false);
   }
 };
 
@@ -28,11 +26,10 @@ const upload = multer({
 
 const uploadMultiple = upload.array('images', 10);
 
-// Upload to Supabase Storage
 const uploadToSupabase = async (file) => {
   const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
   
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('hostel-images')
     .upload(fileName, file.buffer, {
       contentType: file.mimetype,
@@ -41,11 +38,7 @@ const uploadToSupabase = async (file) => {
 
   if (error) throw error;
 
-  // Get public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('hostel-images')
-    .getPublicUrl(fileName);
-
+  const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/hostel-images/${fileName}`;
   return publicUrl;
 };
 
