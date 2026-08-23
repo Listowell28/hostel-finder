@@ -293,7 +293,7 @@ const HostelCard = ({ hostel }) => {
       }
       // If it's a relative path
       if (img.startsWith('/uploads')) {
-        return ${API_URL}${img};
+        return '${API_URL}${img}';
       }
       return img;
     }
