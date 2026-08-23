@@ -156,6 +156,48 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+app.get('/api/auth/google/callback',
+  passport.authenticate('google', { 
+    failureRedirect: '/login',
+    session: false
+  }),
+  (req, res) => {
+    try {
+      const user = req.user;
+      const token = generateToken(user);
+      
+      // ✅ Uses FRONTEND_URL from Render
+      const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendURL}/social-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+      
+    } catch (err) {
+      console.error('Google callback error:', err);
+      res.redirect('/login');
+    }
+  }
+);
+
+app.get('/api/auth/github/callback',
+  passport.authenticate('gighub', { 
+    failureRedirect: '/login',
+    session: false
+  }),
+  (req, res) => {
+    try {
+      const user = req.user;
+      const token = generateToken(user);
+      
+      // ✅ Uses FRONTEND_URL from Render
+      const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendURL}/social-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+      
+    } catch (err) {
+      console.error('Github callback error:', err);
+      res.redirect('/login');
+    }
+  }
+);
+
 // ============ AUTH ROUTES ============
 
 // REGISTER
