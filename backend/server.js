@@ -677,11 +677,7 @@ app.delete('/api/reviews/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============================================
-// ✅ IMAGE UPLOAD ROUTES - FIXED
-// ============================================
-
-// Import upload
+// ============ IMAGE UPLOAD ROUTE ============
 const { upload, uploadMultiple, uploadToSupabase } = require('./upload');
 
 app.post('/api/upload/multiple', authenticate, async (req, res) => {
@@ -696,6 +692,8 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
         return res.status(400).json({ error: 'No images uploaded' });
       }
 
+      console.log(`📸 Uploading ${req.files.length} images to Supabase...`);
+
       const uploadedImages = [];
       for (const file of req.files) {
         try {
@@ -704,19 +702,28 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
             url: publicUrl,
             filename: file.originalname
           });
+          console.log(`✅ Uploaded: ${file.originalname} -> ${publicUrl}`);
         } catch (uploadError) {
           console.error('❌ Upload to Supabase failed:', uploadError);
         }
       }
 
-      console.log(`✅ Uploaded ${uploadedImages.length} images to Supabase`);
+      if (uploadedImages.length === 0) {
+        return res.status(500).json({ error: 'No images could be uploaded' });
+      }
+
+      // ✅ FIXED: Return format that frontend expects
+      const imageUrls = uploadedImages.map(img => img.url);
+      
+      console.log(`✅ Successfully uploaded ${imageUrls.length} images`);
       
       res.status(200).json({
         success: true,
-        message: `${uploadedImages.length} images uploaded successfully`,
+        message: `${imageUrls.length} images uploaded successfully`,
         images: uploadedImages,
-        imageUrls: uploadedImages.map(img => img.url)
+        imageUrls: imageUrls  // ← Frontend expects this
       });
+
     });
   } catch (err) {
     console.error('❌ Upload error:', err);

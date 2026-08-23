@@ -10,7 +10,18 @@ import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) {
-  const [images, setImages] = useState(existingImages || []);
+  const [images, setImages] = useState(
+    existingImages.map(img => {
+      if (img && typeof img === 'string') {
+        if (img.startsWith('http://') || img.startsWith('https://')) {
+          return img;
+        }
+        const cleanPath = img.startsWith('/') ? img : `/${img}`;
+        return `${API_URL}${cleanPath}`;
+      }
+      return img;
+    })
+  );
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -22,201 +33,211 @@ function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) 
 
     const token = localStorage.getItem('token');
     if (!token) {
-      setError('Please login first to upload images');
+      setError('Please login first');
       return;
     }
 
     if (images.length + files.length > maxImages) {
-      setError(`Maximum ${maxImages} images allowed`);
+      setError(`You can only upload up to ${maxImages} images`);
       return;
-    }
-
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('images', files[i]);
     }
 
     setUploading(true);
     setError('');
     setSuccess('');
 
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        setError(`Invalid file type: ${file.name}`);
+        setUploading(false);
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError(`File too large: ${file.name}`);
+        setUploading(false);
+        return;
+      }
+      formData.append('images', file);
+    }
+
     try {
-      const res = await fetch(`${API_URL}/api/upload/multiple`, {
+      console.log('📤 Uploading to:', `${API_URL}/api/upload/multiple`);
+      
+      const response = await fetch(`${API_URL}/api/upload/multiple`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`
         },
-        body: formData,
+        body: formData
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Upload failed: ${text || res.statusText}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
       }
 
-      const data = await res.json();
+      console.log('✅ Upload response:', data);
+
+      // ✅ Get image URLs from response
+      const imageUrls = data.imageUrls || data.images?.map(img => img.url) || [];
       
-      if (!data.images || data.images.length === 0) {
+      if (imageUrls.length === 0) {
         throw new Error('No images returned from server');
       }
 
-      // ✅ Get image URLs
-      const newImages = data.images.map(img => img.url || img);
-      const updatedImages = [...images, ...newImages];
-      setImages(updatedImages);
-      setSuccess(`${files.length} images uploaded successfully!`);
+      console.log('📸 Image URLs:', imageUrls);
+
+      const newImages = [...images, ...imageUrls];
+      setImages(newImages);
+      setSuccess(`Uploaded ${files.length} image(s)`);
 
       if (onImagesUploaded) {
-        onImagesUploaded(updatedImages);
+        onImagesUploaded(newImages);
       }
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+
     } catch (err) {
-      console.error('Upload error:', err);
-      setError(err.message || 'Upload failed. Please try again.');
+      console.error('❌ Upload error:', err);
+      setError(err.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleRemoveImage = (index) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
+  const handleRemoveImage = (indexToRemove) => {
+    const newImages = images.filter((_, index) => index !== indexToRemove);
     setImages(newImages);
     if (onImagesUploaded) {
       onImagesUploaded(newImages);
     }
   };
 
-  return (
-    <Box>
-      <Paper
-        sx={{
-          p: 3,
-          borderRadius: 3,
-          border: '2px dashed #ddd',
-          textAlign: 'center',
-          '&:hover': {
-            borderColor: '#e94560',
-            bgcolor: 'rgba(233,69,96,0.02)'
-          }
-        }}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault();
-          const files = e.dataTransfer.files;
-          if (files && files.length > 0) {
-            handleUpload({ target: { files } });
-          }
-        }}
-      >
-        <AddPhotoAlternateIcon sx={{ fontSize: 48, color: '#8892b0', mb: 1 }} />
-        <Typography variant="body1" sx={{ color: '#8892b0' }}>
-          Drag & drop images here, or click to select
-        </Typography>
-        <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
-          Supports JPG, PNG, GIF, WebP (Max 5MB each)
-        </Typography>
-        <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
-          {images.length} / {maxImages} images used
-        </Typography>
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
-        <Button
-          variant="contained"
-          component="label"
-          startIcon={<CloudUploadIcon />}
-          disabled={uploading || images.length >= maxImages}
-          sx={{
-            mt: 2,
-            bgcolor: '#e94560',
-            borderRadius: 50,
-            px: 4,
-            '&:hover': { bgcolor: '#c73652' }
-          }}
-        >
-          {uploading ? 'Uploading...' : 'Select Images'}
-          <input
-            type="file"
-            hidden
-            multiple
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleUpload}
-            disabled={uploading || images.length >= maxImages}
-          />
-        </Button>
-      </Paper>
+  return (
+    <Paper sx={{ p: 3, mt: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Hostel Images
+      </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError('')}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
         </Alert>
       )}
+
       {success && (
-        <Alert severity="success" sx={{ mt: 2 }} onClose={() => setSuccess('')}>
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
           {success}
         </Alert>
       )}
 
-      {uploading && (
-        <Box sx={{ textAlign: 'center', py: 2 }}>
-          <CircularProgress sx={{ color: '#e94560' }} />
-          <Typography variant="body2" sx={{ color: '#8892b0', mt: 1 }}>
-            Uploading images...
-          </Typography>
-        </Box>
-      )}
+      <Box
+        sx={{
+          border: '2px dashed #ccc',
+          borderRadius: 2,
+          p: 3,
+          textAlign: 'center',
+          cursor: 'pointer',
+          '&:hover': {
+            borderColor: 'primary.main',
+            bgcolor: 'action.hover'
+          }
+        }}
+        onClick={handleButtonClick}
+      >
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleUpload}
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          disabled={uploading || images.length >= maxImages}
+        />
+        
+        <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+        <Typography variant="body1" color="text.secondary">
+          Drag & drop images here, or click to select
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Supports JPG, PNG, GIF, WebP (Max 5MB each)
+        </Typography>
+        <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+          {images.length} / {maxImages} images used
+        </Typography>
 
-      {/* ✅ FIXED: Image Preview with Full URL */}
+        {uploading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <CircularProgress size={24} />
+            <Typography variant="body2" sx={{ ml: 1 }}>
+              Uploading...
+            </Typography>
+          </Box>
+        )}
+
+        {images.length < maxImages && !uploading && (
+          <Button
+            variant="contained"
+            startIcon={<AddPhotoAlternateIcon />}
+            sx={{ mt: 2 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleButtonClick();
+            }}
+          >
+            SELECT IMAGES
+          </Button>
+        )}
+      </Box>
+
       {images.length > 0 && (
         <ImageList cols={3} rowHeight={150} sx={{ mt: 2 }}>
-              {images.map((image, index) => {
-  // Build full URL for preview
-       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-       const imageUrl = image && image.startsWith('/uploads')
-       ? `${API_URL}${image}`
-       : image;
-
-     return (
-     <ImageListItem key={index} sx={{ position: 'relative' }}>
-      ...
-                <img
-                  src={imageUrl}
-                  alt={`Hostel image ${index + 1}`}
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover', 
-                    borderRadius: 8 
-                  }}
-                  onError={(e) => {
-                    e.target.src = 'https://placehold.co/150x150/e94560/white?text=Error';
-                  }}
-                />
-                <IconButton
-                  sx={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    bgcolor: '#e94560',
-                    color: 'white',
-                    '&:hover': { bgcolor: '#c73652' },
-                    width: 28,
-                    height: 28
-                  }}
-                  size="small"
-                  onClick={() => handleRemoveImage(index)}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </ImageListItem>
-            );
-          })}
+          {images.map((image, index) => (
+            <ImageListItem key={index} sx={{ position: 'relative' }}>
+              <img
+                src={image}
+                alt={`Hostel image ${index + 1}`}
+                loading="lazy"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: 8
+                }}
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/150x150/1a1a2e/ffffff?text=Error';
+                }}
+              />
+              <IconButton
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  bgcolor: '#e94560',
+                  color: 'white',
+                  '&:hover': { bgcolor: '#c73692' }
+                }}
+                size="small"
+                onClick={() => handleRemoveImage(index)}
+                disabled={uploading}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </ImageListItem>
+          ))}
         </ImageList>
       )}
-    </Box>
+    </Paper>
   );
 }
 
