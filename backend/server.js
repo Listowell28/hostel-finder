@@ -359,14 +359,16 @@ app.post('/api/hostels', authenticate, async (req, res) => {
   }
 });
 
-// Update hostel
+// Update hostel - ONLY UPDATES FIELDS THAT ARE SENT
 app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
-  const { name, address, city, state, zip_code, description, price_per_year, amenities, images, available } = req.body;
+  const updates = req.body;
   
-  console.log('🔄 Updating hostel:', { id, available }); // ✅ Debug log
+  console.log('🔄 Updating hostel ID:', id);
+  console.log('📦 Fields to update:', Object.keys(updates));
   
   try {
+    // Check authorization
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ error: 'Hostel not found' });
@@ -375,39 +377,81 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    const result = await pool.query(
-      `UPDATE hostels 
-       SET name = $1, address = $2, city = $3, state = $4, zip_code = $5, 
-           description = $6, price_per_year = $7, amenities = $8, images = $9, available = $10
-       WHERE id = $11
-       RETURNING *`,
-      [
-        name, 
-        address, 
-        city, 
-        state, 
-        zip_code, 
-        description, 
-        parseFloat(price_per_year), 
-        amenities || [], 
-        images || [], 
-        available !== false,  // ✅ Ensure boolean
-        id
-      ]
-    );
+    // Build dynamic UPDATE query
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    // Only add fields that are actually sent
+    if (updates.name !== undefined) {
+      fields.push(`name = $${paramCount++}`);
+      values.push(updates.name);
+    }
+    if (updates.address !== undefined) {
+      fields.push(`address = $${paramCount++}`);
+      values.push(updates.address);
+    }
+    if (updates.city !== undefined) {
+      fields.push(`city = $${paramCount++}`);
+      values.push(updates.city);
+    }
+    if (updates.state !== undefined) {
+      fields.push(`state = $${paramCount++}`);
+      values.push(updates.state);
+    }
+    if (updates.zip_code !== undefined) {
+      fields.push(`zip_code = $${paramCount++}`);
+      values.push(updates.zip_code);
+    }
+    if (updates.description !== undefined) {
+      fields.push(`description = $${paramCount++}`);
+      values.push(updates.description);
+    }
+    if (updates.price_per_year !== undefined) {
+      fields.push(`price_per_year = $${paramCount++}`);
+      values.push(parseFloat(updates.price_per_year));
+    }
+    if (updates.amenities !== undefined) {
+      fields.push(`amenities = $${paramCount++}`);
+      values.push(updates.amenities || []);
+    }
+    if (updates.images !== undefined) {
+      fields.push(`images = $${paramCount++}`);
+      values.push(updates.images || []);
+    }
+    if (updates.available !== undefined) {
+      fields.push(`available = $${paramCount++}`);
+      // ✅ Convert to proper boolean
+      values.push(updates.available === true || updates.available === 'true');
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(id);
+    const query = `UPDATE hostels SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    
+    console.log('📝 Query:', query);
+    console.log('📊 Values:', values);
+
+    const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Hostel not found' });
     }
     
-    console.log('✅ Hostel updated, available:', result.rows[0].available);
+    console.log('✅ Hostel updated:', result.rows[0]);
     res.json({ 
       message: 'Hostel updated successfully', 
       hostel: result.rows[0] 
     });
   } catch (err) {
     console.error('❌ Error updating hostel:', err);
-    res.status(500).json({ error: 'Failed to update hostel' });
+    res.status(500).json({ 
+      error: 'Failed to update hostel',
+      details: err.message 
+    });
   }
 });
 
