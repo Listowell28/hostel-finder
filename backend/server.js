@@ -67,6 +67,15 @@ app.use(passport.session());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hostel_finder_super_secret_key_2026';
 
+// ============ TOKEN GENERATION ============
+const generateToken = (user) => {
+  return jwt.sign(
+    { userId: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+};
+
 // ============ AUTH FUNCTIONS ============
 async function registerUser(email, password, full_name, phone, role = 'student') {
   const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
