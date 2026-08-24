@@ -318,7 +318,7 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
-// ✅ Create hostel - WITH available field
+// Create hostel
 app.post('/api/hostels', authenticate, async (req, res) => {
   const { name, address, city, state, zip_code, description, price_per_year, amenities, images, available } = req.body;
 
@@ -335,7 +335,19 @@ app.post('/api/hostels', authenticate, async (req, res) => {
       `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images, available)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [name, address, city, state, zip_code, description, parseFloat(price_per_year), amenities || [], req.user.id, images || [], available !== false]
+      [
+        name, 
+        address, 
+        city, 
+        state, 
+        zip_code, 
+        description, 
+        parseFloat(price_per_year), 
+        amenities || [], 
+        req.user.id, 
+        images || [], 
+        available !== false  // ✅ Default to true if not provided
+      ]
     );
     
     console.log('✅ Hostel created with images:', result.rows[0].images);
@@ -347,10 +359,12 @@ app.post('/api/hostels', authenticate, async (req, res) => {
   }
 });
 
-// ✅ Update hostel - WITH available field
+// Update hostel
 app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { name, address, city, state, zip_code, description, price_per_year, amenities, images, available } = req.body;
+  
+  console.log('🔄 Updating hostel:', { id, available }); // ✅ Debug log
   
   try {
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
@@ -367,12 +381,32 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
            description = $6, price_per_year = $7, amenities = $8, images = $9, available = $10
        WHERE id = $11
        RETURNING *`,
-      [name, address, city, state, zip_code, description, parseFloat(price_per_year), amenities, images || [], available !== false, id]
+      [
+        name, 
+        address, 
+        city, 
+        state, 
+        zip_code, 
+        description, 
+        parseFloat(price_per_year), 
+        amenities || [], 
+        images || [], 
+        available !== false,  // ✅ Ensure boolean
+        id
+      ]
     );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found' });
+    }
+    
     console.log('✅ Hostel updated, available:', result.rows[0].available);
-    res.json(result.rows[0]);
+    res.json({ 
+      message: 'Hostel updated successfully', 
+      hostel: result.rows[0] 
+    });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Error updating hostel:', err);
     res.status(500).json({ error: 'Failed to update hostel' });
   }
 });
