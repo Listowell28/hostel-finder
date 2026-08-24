@@ -27,10 +27,9 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const categories = [
-    { name: 'Rental Hostel', icon: '🏠' },
-    { name: 'Homestel', icon: '🏡' },
-    { name: 'Apartment', icon: '🏢' },
-    { name: 'Rooms', icon: '🛏️' }
+    { name: 'Hostel' },
+    { name: 'Homestel'},
+    
   ];
 
   return (
@@ -115,9 +114,9 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             fontSize: '0.8rem'
           }}
         >
-          <LocationIcon sx={{ fontSize: 16 }} />
+          <LocationIcon sx={{ fontSize: 25 }} />
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-            Kumasi, Ghana
+            Kumasi-Tanoso, Ghana
           </Typography>
         </Box>
 
@@ -183,8 +182,8 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             lineHeight: 1.2
           }}
         >
-          Discover <br />
-          <span style={{ color: '#e94560' }}>Your New</span> Space
+          <br />
+          <span style={{ color: '#e94560' }}></span> 
         </Typography>
         
         {/* ✅ Location under welcome text */}
@@ -199,8 +198,8 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             gap: 0.5
           }}
         >
-          <LocationIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }} />
-          Kumasi, Ghana
+          <LocationIcon sx={{ fontSize: 25, color: 'rgba(255,255,255,0.5)' }} />
+          Kumasi-Tanoso, Ghana
         </Typography>
         
         <Typography
