@@ -318,9 +318,9 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
-// Create hostel
+// ✅ Create hostel - WITH available field
 app.post('/api/hostels', authenticate, async (req, res) => {
-  const { name, address, city, state, zip_code, description, price_per_year, amenities, images } = req.body;
+  const { name, address, city, state, zip_code, description, price_per_year, amenities, images, available } = req.body;
 
   if (!name || !address || !city || !price_per_year) {
     return res.status(400).json({ error: 'Name, address, city, and price are required' });
@@ -332,13 +332,14 @@ app.post('/api/hostels', authenticate, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images, available)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [name, address, city, state, zip_code, description, parseFloat(price_per_year), amenities || [], req.user.id, images || []]
+      [name, address, city, state, zip_code, description, parseFloat(price_per_year), amenities || [], req.user.id, images || [], available !== false]
     );
     
     console.log('✅ Hostel created with images:', result.rows[0].images);
+    console.log('✅ Available:', result.rows[0].available);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('❌ Error creating hostel:', err);
@@ -346,10 +347,10 @@ app.post('/api/hostels', authenticate, async (req, res) => {
   }
 });
 
-// Update hostel
+// ✅ Update hostel - WITH available field
 app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
-  const { name, address, city, state, zip_code, description, price_per_year, amenities, images } = req.body;
+  const { name, address, city, state, zip_code, description, price_per_year, amenities, images, available } = req.body;
   
   try {
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
@@ -363,11 +364,12 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
     const result = await pool.query(
       `UPDATE hostels 
        SET name = $1, address = $2, city = $3, state = $4, zip_code = $5, 
-           description = $6, price_per_year = $7, amenities = $8, images = $9
-       WHERE id = $10
+           description = $6, price_per_year = $7, amenities = $8, images = $9, available = $10
+       WHERE id = $11
        RETURNING *`,
-      [name, address, city, state, zip_code, description, parseFloat(price_per_year), amenities, images || [], id]
+      [name, address, city, state, zip_code, description, parseFloat(price_per_year), amenities, images || [], available !== false, id]
     );
+    console.log('✅ Hostel updated, available:', result.rows[0].available);
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);

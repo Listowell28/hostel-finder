@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import {
   Box, Paper, TextField, Button, Typography, Alert,
-  Grid, Chip, Divider, CircularProgress, InputAdornment
+  Grid, Chip, Divider, CircularProgress, InputAdornment,
+  Switch, FormControlLabel
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -23,7 +24,8 @@ function AddHostel({ onHostelAdded }) {
     zip_code: '',
     description: '',
     price_per_year: '',
-    amenities: ''
+    amenities: '',
+    available: true  // ✅ Added available field
   });
   const [images, setImages] = useState([]);
   const [error, setError] = useState('');
@@ -53,21 +55,21 @@ function AddHostel({ onHostelAdded }) {
 
     const amenitiesArray = form.amenities.split(',').map(a => a.trim()).filter(a => a);
 
-   // In AddHostel.jsx - handleSubmit
-const hostelData = {
-  name: form.name,
-  address: form.address,
-  city: form.city,
-  state: form.state,
-  zip_code: form.zip_code,
-  description: form.description,
-  price_per_year: parseFloat(form.price_per_year),
-  amenities: amenitiesArray,
-  images: images  // ✅ This should be an array of URLs
-};
+    const hostelData = {
+      name: form.name,
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      zip_code: form.zip_code,
+      description: form.description,
+      price_per_year: parseFloat(form.price_per_year),
+      amenities: amenitiesArray,
+      images: images,
+      available: form.available !== false  // ✅ Add availability
+    };
 
-// ✅ Log to see what's being sent
-console.log('📤 Sending images:', images);
+    console.log('📤 Sending images:', images);
+    console.log('📤 Available:', form.available);
 
     try {
       const res = await fetch(`${API_URL}/api/hostels`, {
@@ -91,7 +93,8 @@ console.log('📤 Sending images:', images);
         zip_code: '',
         description: '',
         price_per_year: '',
-        amenities: ''
+        amenities: '',
+        available: true
       });
       setImages([]);
       if (onHostelAdded) onHostelAdded();
@@ -226,6 +229,48 @@ console.log('📤 Sending images:', images);
                   })}
                 </Box>
               )}
+            </Grid>
+
+            {/* ✅ AVAILABILITY TOGGLE - ADDED HERE */}
+            <Grid item xs={12}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                p: 2,
+                bgcolor: '#f5f7fa',
+                borderRadius: 2,
+                border: '1px solid #e0e0e0'
+              }}>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a2e' }}>
+                    📌 Availability Status
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#8892b0' }}>
+                    {form.available !== false ? 'Hostel will be visible and bookable' : 'Hostel will be hidden as unavailable'}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="body2" sx={{ 
+                    fontWeight: 600,
+                    color: form.available !== false ? '#4caf50' : '#e94560'
+                  }}>
+                    {form.available !== false ? '✅ Available' : '❌ Unavailable'}
+                  </Typography>
+                  <Switch
+                    checked={form.available !== false}
+                    onChange={(e) => setForm({ ...form, available: e.target.checked })}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#4caf50',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#4caf50',
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
             </Grid>
 
             <Grid item xs={12}>

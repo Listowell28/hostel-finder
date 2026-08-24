@@ -290,28 +290,22 @@ function HomePage() {
 // ✅ LUXURY HOSTEL CARD - MATCHING THE IMAGE STYLE
 // ============================================
 const HostelCard = ({ hostel }) => {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   const getImageUrl = () => {
     if (hostel.images && hostel.images.length > 0) {
       const img = hostel.images[0];
-      // If it's already a full URL (Supabase Storage)
-      if (img.startsWith('http://') || img.startsWith('https://')) {
-        return img;
-      }
-      // If it's a relative path
-      if (img.startsWith('/uploads')) {
-        return '${API_URL}${img}';
-      }
+      if (img.startsWith('http')) return img;
+      if (img.startsWith('/uploads')) return `${API_URL}${img}`;
       return img;
     }
     return null;
   };
 
-  // Generate random amenities for display (since we want to show luxury features)
   const displayAmenities = hostel.amenities && hostel.amenities.length > 0 
     ? hostel.amenities 
     : ['Free WiFi', 'Parking', 'Air Conditioning', 'TV', 'Kitchen'];
 
-  // Get room count from hostel data or generate random
   const roomCount = hostel.rooms?.length || Math.floor(Math.random() * 5) + 1;
   const bathroomCount = Math.floor(roomCount / 2) + 1;
   const sqft = (roomCount * 150) + 50;
@@ -339,7 +333,7 @@ const HostelCard = ({ hostel }) => {
         }
       }}
     >
-      {/* ✅ IMAGE - 200px height with overlay gradient */}
+      {/* Image Section */}
       <Box sx={{ 
         position: 'relative', 
         height: 200,
@@ -413,7 +407,7 @@ const HostelCard = ({ hostel }) => {
           </Box>
         )}
 
-        {/* Price Badge - Large and prominent */}
+        {/* Price Badge */}
         <Box
           sx={{
             position: 'absolute',
@@ -471,32 +465,30 @@ const HostelCard = ({ hostel }) => {
           {hostel.rating || '4.9'}
         </Box>
 
-        {/* Available Badge */}
-        {hostel.available !== false && (
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 16,
-              right: 16,
-              bgcolor: 'rgba(76,175,80,0.92)',
-              color: 'white',
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 2,
-              fontSize: '10px',
-              fontWeight: 600,
-              backdropFilter: 'blur(4px)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}
-          >
-            
-          </Box>
-        )}
+        {/* ✅ AVAILABLE / UNAVAILABLE BADGE - FIXED */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            right: 16,
+            bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.92)' : 'rgba(233,69,96,0.92)',
+            color: 'white',
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 2,
+            fontSize: '10px',
+            fontWeight: 600,
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {hostel.available !== false ? 'Available' : 'Unavailable'}
+        </Box>
       </Box>
 
-      {/* ✅ CONTENT - Detailed room info like the image */}
+      {/* Content Section */}
       <CardContent sx={{ 
         p: 2.5,
         flex: 1,
@@ -506,7 +498,6 @@ const HostelCard = ({ hostel }) => {
         bgcolor: darkMode ? '#1e1e1e' : '#ffffff'
       }}>
         <Box>
-          {/* Room Title */}
           <Typography
             variant="h6"
             sx={{
@@ -523,7 +514,6 @@ const HostelCard = ({ hostel }) => {
             {hostel.name}
           </Typography>
 
-          {/* Category/Type */}
           <Typography
             variant="caption"
             sx={{
@@ -539,7 +529,6 @@ const HostelCard = ({ hostel }) => {
             {hostel.category || 'Deluxe Room'} • {hostel.type || 'Premium'}
           </Typography>
 
-          {/* Room Specs - Like the image shows: 1 Bed, 1 Bath, 300 sqft */}
           <Box sx={{ 
             display: 'flex', 
             gap: 2, 
@@ -567,7 +556,6 @@ const HostelCard = ({ hostel }) => {
             </Box>
           </Box>
 
-          {/* Amenities - Show as chips */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
             {displayAmenities.slice(0, 4).map((amenity, i) => (
               <Chip
@@ -602,7 +590,7 @@ const HostelCard = ({ hostel }) => {
           </Box>
         </Box>
 
-        {/* ✅ BOOK NOW BUTTON - Prominent and always visible */}
+        {/* Book Now Button */}
         {user ? (
           (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
             <Button
@@ -611,10 +599,14 @@ const HostelCard = ({ hostel }) => {
               size="medium"
               onClick={(e) => {
                 e.stopPropagation();
-                handleBookNow(hostel);
+                if (hostel.available !== false) {
+                  handleBookNow(hostel);
+                } else {
+                  alert('This hostel is currently unavailable.');
+                }
               }}
               sx={{
-                bgcolor: '#e94560',
+                bgcolor: hostel.available !== false ? '#e94560' : '#666',
                 borderRadius: 50,
                 py: 1.2,
                 fontWeight: 700,
@@ -622,13 +614,13 @@ const HostelCard = ({ hostel }) => {
                 textTransform: 'none',
                 letterSpacing: '0.3px',
                 '&:hover': { 
-                  bgcolor: '#c73652',
-                  boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
+                  bgcolor: hostel.available !== false ? '#c73652' : '#555',
                 },
-                mt: 1
+                mt: 1,
+                cursor: hostel.available !== false ? 'pointer' : 'not-allowed'
               }}
             >
-              ✦ Book Now
+              {hostel.available !== false ? '✦ Book Now' : 'Not Available'}
             </Button>
           )
         ) : (
@@ -648,7 +640,6 @@ const HostelCard = ({ hostel }) => {
                 '&:hover': {
                   bgcolor: 'rgba(233,69,96,0.05)',
                   borderColor: '#c73652',
-                  boxShadow: '0 4px 20px rgba(233,69,96,0.15)'
                 },
                 mt: 1
               }}

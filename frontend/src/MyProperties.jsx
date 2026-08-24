@@ -3,7 +3,7 @@ import {
   Box, Paper, Typography, Grid, Card, CardContent,
   Button, Chip, Alert, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Divider
+  TextField, Divider, Switch, FormControlLabel
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -85,6 +85,33 @@ function MyProperties() {
     }
   };
 
+  // ✅ NEW: Toggle availability function
+  const toggleAvailability = async (hostelId, currentStatus) => {
+    try {
+      const res = await fetch(`${API_URL}/api/hostels/${hostelId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          available: !currentStatus
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update availability');
+
+      // Update local state
+      setHostels(hostels.map(h => 
+        h.id === hostelId ? { ...h, available: !currentStatus } : h
+      ));
+      
+      setSuccess(`Hostel ${!currentStatus ? 'available' : 'unavailable'} successfully!`);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const formatPrice = (price) => {
     const num = parseFloat(price);
     return `GH₵${isNaN(num) ? '0.00' : num.toFixed(2)}/year`;
@@ -153,6 +180,45 @@ function MyProperties() {
                       <LocationIcon sx={{ fontSize: 16, color: '#8892b0' }} />
                       <Typography variant="body2" sx={{ color: '#8892b0' }}>{hostel.city}, {hostel.state || 'Ghana'}</Typography>
                     </Box>
+                    
+                    {/* ✅ AVAILABILITY TOGGLE - ADDED HERE */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, p: 1, bgcolor: '#f5f7fa', borderRadius: 2 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Status:
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={hostel.available !== false ? 'Available' : 'Unavailable'}
+                          size="small"
+                          sx={{
+                            bgcolor: hostel.available !== false ? '#4caf50' : '#e94560',
+                            color: 'white',
+                            fontWeight: 600,
+                            fontSize: '0.7rem'
+                          }}
+                        />
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => toggleAvailability(hostel.id, hostel.available)}
+                          sx={{
+                            borderRadius: 50,
+                            borderColor: hostel.available !== false ? '#e94560' : '#4caf50',
+                            color: hostel.available !== false ? '#e94560' : '#4caf50',
+                            fontSize: '0.65rem',
+                            px: 1.5,
+                            py: 0.5,
+                            minWidth: 'auto',
+                            '&:hover': {
+                              bgcolor: hostel.available !== false ? 'rgba(233,69,96,0.05)' : 'rgba(76,175,80,0.05)'
+                            }
+                          }}
+                        >
+                          {hostel.available !== false ? 'Set Unavailable' : 'Set Available'}
+                        </Button>
+                      </Box>
+                    </Box>
+
                     <Typography variant="body2" sx={{ color: '#6b7a8f', mb: 2 }}>{hostel.description?.slice(0, 80) || 'No description'}</Typography>
                     {hostel.images && hostel.images.length > 0 && (
                       <Box sx={{ display: 'flex', gap: 0.5, mb: 2, overflowX: 'auto' }}>
@@ -195,6 +261,30 @@ function MyProperties() {
               <TextField label="Name" value={editForm.name || ''} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} fullWidth />
               <TextField label="Price (GH₵/year)" type="number" value={editForm.price_per_year || ''} onChange={(e) => setEditForm({ ...editForm, price_per_year: parseFloat(e.target.value) })} fullWidth />
               <TextField label="Description" multiline rows={4} value={editForm.description || ''} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} fullWidth />
+              
+              {/* ✅ AVAILABILITY TOGGLE IN EDIT DIALOG */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Availability:
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="caption" sx={{ color: editForm.available !== false ? '#4caf50' : '#e94560' }}>
+                    {editForm.available !== false ? 'Available' : 'Unavailable'}
+                  </Typography>
+                  <Switch
+                    checked={editForm.available !== false}
+                    onChange={(e) => setEditForm({ ...editForm, available: e.target.checked })}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#4caf50',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#4caf50',
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
             </Box>
           </DialogContent>
           <DialogActions>
