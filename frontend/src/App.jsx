@@ -310,25 +310,18 @@ const HostelCard = ({ hostel }) => {
   const bathroomCount = Math.floor(roomCount / 2) + 1;
   const sqft = (roomCount * 150) + 50;
 
-  // ✅ Handle card click - ignore if clicking on button
-  const handleCardClick = (e) => {
-    // Don't navigate if clicking on button or its children
-    if (e.target.closest('button')) {
-      return;
-    }
+  // ✅ Simple card click - only navigates, doesn't interfere
+  const handleCardClick = () => {
     navigate(`/hostel/${hostel.id}`);
   };
 
-  // ✅ Handle book now click
-  const handleBookNowClick = (e) => {
-    e.preventDefault();
+  // ✅ Simple book now click
+  const handleBookNow = (e) => {
     e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    
+    e.preventDefault();
     if (hostel.available !== false) {
-      handleBookNow(hostel);
-    } else {
-      alert('This hostel is currently unavailable.');
+      // Call the parent's handleBookNow function
+      window.handleBookNow(hostel);
     }
   };
 
@@ -378,7 +371,6 @@ const HostelCard = ({ hostel }) => {
                 e.target.style.display = 'none';
               }}
             />
-            {/* Gradient Overlay */}
             <Box
               className="hostel-image-overlay"
               sx={{
@@ -612,45 +604,57 @@ const HostelCard = ({ hostel }) => {
           </Box>
         </Box>
 
-        {/* ✅ BOOK NOW BUTTON - FIXED FOR MOBILE */}
+        {/* ✅ BOOK NOW BUTTON - Moved outside Card click */}
         {user ? (
           (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
-            <Button
-              fullWidth
-              variant="contained"
-              size="medium"
-              onClick={handleBookNowClick}
-              onTouchStart={(e) => {
-                // Prevent any parent touch events
+            <Box
+              onClick={(e) => {
                 e.stopPropagation();
+                e.preventDefault();
               }}
               sx={{
-                bgcolor: hostel.available !== false ? '#e94560' : '#666',
-                borderRadius: 50,
-                py: 1.2,
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                letterSpacing: '0.3px',
-                '&:hover': { 
-                  bgcolor: hostel.available !== false ? '#c73652' : '#555',
-                  boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
-                },
                 mt: 1,
-                position: 'relative',
-                zIndex: 10,
-                touchAction: 'manipulation',
-                cursor: hostel.available !== false ? 'pointer' : 'not-allowed',
-                '&:active': {
-                  transform: 'scale(0.97)'
-                }
+                width: '100%',
+                zIndex: 20,
+                position: 'relative'
               }}
             >
-              {hostel.available !== false ? '✦ Book Now' : 'Not Available'}
-            </Button>
+              <Button
+                fullWidth
+                variant="contained"
+                size="medium"
+                onClick={() => {
+                  if (hostel.available !== false) {
+                    handleBookNow(hostel);
+                  } else {
+                    alert('This hostel is currently unavailable.');
+                  }
+                }}
+                sx={{
+                  bgcolor: hostel.available !== false ? '#e94560' : '#666',
+                  borderRadius: 50,
+                  py: 1.2,
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  textTransform: 'none',
+                  letterSpacing: '0.3px',
+                  '&:hover': { 
+                    bgcolor: hostel.available !== false ? '#c73652' : '#555',
+                    boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
+                  },
+                  pointerEvents: 'auto',
+                  cursor: hostel.available !== false ? 'pointer' : 'not-allowed',
+                  '&:active': {
+                    transform: 'scale(0.97)'
+                  }
+                }}
+              >
+                {hostel.available !== false ? '✦ Book Now' : 'Not Available'}
+              </Button>
+            </Box>
           )
         ) : (
-          <Link to="/login" style={{ width: '100%', textDecoration: 'none' }}>
+          <Link to="/login" style={{ width: '100%', textDecoration: 'none', display: 'block', mt: 1 }}>
             <Button
               fullWidth
               variant="outlined"
@@ -668,7 +672,8 @@ const HostelCard = ({ hostel }) => {
                   borderColor: '#c73652',
                   boxShadow: '0 4px 20px rgba(233,69,96,0.15)'
                 },
-                mt: 1
+                mt: 1,
+                width: '100%'
               }}
             >
               Login to Book
@@ -803,14 +808,14 @@ const HostelCard = ({ hostel }) => {
  if (isMobile) {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa', pb: 8 }}>
-      {/* Modern Header - Now Smaller */}
+      {/* Modern Header */}
       <ModernHeader 
         user={user} 
         onMenuClick={() => setSidebarOpen(true)}
         darkMode={darkMode}
       />
 
-      {/* Mobile Sidebar - Now Working */}
+      {/* Mobile Sidebar */}
       <MobileSidebar 
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -870,8 +875,141 @@ const HostelCard = ({ hostel }) => {
         </BottomNavigation>
       </Paper>
 
-      {/* Booking Dialog - Mobile */}
-      {/* ... keep your booking dialog code here ... */}
+      {/* ✅ BOOKING DIALOG - ADD THIS */}
+      <Dialog
+        open={!!bookingDialog}
+        onClose={() => {
+          setBookingDialog(null);
+          setSelectedRoom(null);
+          setPhoneNumber('');
+          setRoomType('');
+          setGuests(1);
+          setBookingError('');
+          setBookingSuccess('');
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: { xs: 0, sm: 4 },
+            margin: { xs: 0, sm: 2 },
+            maxHeight: '90vh',
+            position: 'fixed',
+            bottom: { xs: 0, sm: 'auto' },
+            top: { xs: 'auto', sm: 'auto' },
+            width: '100%'
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: '#1a1a2e', fontWeight: 700 }}>
+          Book {bookingDialog?.name}
+        </DialogTitle>
+        
+        <DialogContent>
+          {bookingError && <Alert severity="error" sx={{ mb: 2 }}>{bookingError}</Alert>}
+          {bookingSuccess && <Alert severity="success" sx={{ mb: 2 }}>{bookingSuccess}</Alert>}
+          
+          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ color: '#8892b0' }}>
+                Price: GH₵{bookingDialog?.price_per_year}/year
+              </Typography>
+              <Chip
+                label={bookingDialog?.available !== false ? "Available" : "Unavailable"}
+                color={bookingDialog?.available !== false ? "success" : "error"}
+                size="small"
+              />
+            </Box>
+
+            <TextField
+              label="Phone Number"
+              type="tel"
+              fullWidth
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="0244123456"
+              helperText="Enter your phone number for booking confirmation"
+              required
+            />
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Select Room Type
+              </Typography>
+              <Grid container spacing={1}>
+                {['1 in a room', '2 in a room', '3 in a room'].map((type) => (
+                  <Grid item xs={4} key={type}>
+                    <Card
+                      onClick={() => setRoomType(type)}
+                      sx={{
+                        cursor: 'pointer',
+                        border: roomType === type ? '2px solid #e94560' : '1px solid #ddd',
+                        borderRadius: 2,
+                        p: 2,
+                        textAlign: 'center',
+                        transition: 'all 0.3s ease',
+                        bgcolor: roomType === type ? 'rgba(233,69,96,0.05)' : 'white',
+                        '&:hover': {
+                          borderColor: '#e94560',
+                          transform: 'scale(1.02)'
+                        }
+                      }}
+                    >
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
+                        {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                        {type}
+                      </Typography>
+                      {roomType === type && (
+                        <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
+                          Selected
+                        </Typography>
+                      )}
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+              {!roomType && (
+                <Typography variant="caption" sx={{ color: '#e94560', display: 'block', mt: 1 }}>
+                  Please select a room type
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => {
+              setBookingDialog(null);
+              setSelectedRoom(null);
+              setPhoneNumber('');
+              setRoomType('');
+              setGuests(1);
+              setBookingError('');
+              setBookingSuccess('');
+            }}
+            sx={{ color: '#8892b0' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmBooking}
+            disabled={bookingLoading || !phoneNumber || !roomType}
+            sx={{
+              background: 'linear-gradient(135deg, #e94560, #c73652)',
+              borderRadius: 50,
+              px: 4,
+              fontWeight: 600,
+              '&:hover': { background: 'linear-gradient(135deg, #c73652, #a82842)' }
+            }}
+          >
+            {bookingLoading ? 'Booking...' : 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <DeveloperInfo />
     </Box>
