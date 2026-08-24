@@ -310,9 +310,31 @@ const HostelCard = ({ hostel }) => {
   const bathroomCount = Math.floor(roomCount / 2) + 1;
   const sqft = (roomCount * 150) + 50;
 
+  // ✅ Handle card click - ignore if clicking on button
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on button or its children
+    if (e.target.closest('button')) {
+      return;
+    }
+    navigate(`/hostel/${hostel.id}`);
+  };
+
+  // ✅ Handle book now click
+  const handleBookNowClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    
+    if (hostel.available !== false) {
+      handleBookNow(hostel);
+    } else {
+      alert('This hostel is currently unavailable.');
+    }
+  };
+
   return (
     <Card
-      onClick={() => navigate(`/hostel/${hostel.id}`)}
+      onClick={handleCardClick}
       sx={{
         borderRadius: 4,
         overflow: 'hidden',
@@ -465,7 +487,7 @@ const HostelCard = ({ hostel }) => {
           {hostel.rating || '4.9'}
         </Box>
 
-        {/* ✅ AVAILABLE / UNAVAILABLE BADGE - FIXED */}
+        {/* Available / Unavailable Badge */}
         <Box
           sx={{
             position: 'absolute',
@@ -590,20 +612,17 @@ const HostelCard = ({ hostel }) => {
           </Box>
         </Box>
 
-        {/* Book Now Button */}
+        {/* ✅ BOOK NOW BUTTON - FIXED FOR MOBILE */}
         {user ? (
           (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
             <Button
               fullWidth
               variant="contained"
               size="medium"
-              onClick={(e) => {
+              onClick={handleBookNowClick}
+              onTouchStart={(e) => {
+                // Prevent any parent touch events
                 e.stopPropagation();
-                if (hostel.available !== false) {
-                  handleBookNow(hostel);
-                } else {
-                  alert('This hostel is currently unavailable.');
-                }
               }}
               sx={{
                 bgcolor: hostel.available !== false ? '#e94560' : '#666',
@@ -615,9 +634,16 @@ const HostelCard = ({ hostel }) => {
                 letterSpacing: '0.3px',
                 '&:hover': { 
                   bgcolor: hostel.available !== false ? '#c73652' : '#555',
+                  boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
                 },
                 mt: 1,
-                cursor: hostel.available !== false ? 'pointer' : 'not-allowed'
+                position: 'relative',
+                zIndex: 10,
+                touchAction: 'manipulation',
+                cursor: hostel.available !== false ? 'pointer' : 'not-allowed',
+                '&:active': {
+                  transform: 'scale(0.97)'
+                }
               }}
             >
               {hostel.available !== false ? '✦ Book Now' : 'Not Available'}
@@ -640,6 +666,7 @@ const HostelCard = ({ hostel }) => {
                 '&:hover': {
                   bgcolor: 'rgba(233,69,96,0.05)',
                   borderColor: '#c73652',
+                  boxShadow: '0 4px 20px rgba(233,69,96,0.15)'
                 },
                 mt: 1
               }}
