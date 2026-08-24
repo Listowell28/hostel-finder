@@ -27,9 +27,11 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const categories = [
-    { name: 'Rental Hostel' },
-    { name: 'Homestel' },
-    ];
+    { name: 'Rental Hostel', icon: '🏠' },
+    { name: 'Homestel', icon: '🏡' },
+    { name: 'Apartment', icon: '🏢' },
+    { name: 'Rooms', icon: '🛏️' }
+  ];
 
   return (
     <Box
@@ -46,7 +48,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
         overflow: 'hidden'
       }}
     >
-      {/* Background decorative elements - smaller */}
+      {/* Background decorative elements */}
       <Box
         sx={{
           position: 'absolute',
@@ -60,7 +62,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
         }}
       />
 
-      {/* Top Bar - Compact */}
+      {/* Top Bar - WITH LOGO AND LOCATION */}
       <Box
         sx={{
           display: 'flex',
@@ -68,41 +70,34 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           alignItems: 'center',
           mb: { xs: 2, sm: 2.5 },
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          flexWrap: 'wrap',
+          gap: 1
         }}
       >
         {/* Left: Menu + Logo */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton
-            onClick={onMenuClick}
-            sx={{ color: 'white', p: 0.5 }}
-          >
+          <IconButton onClick={onMenuClick} sx={{ color: 'white', p: 0.5 }}>
             <MenuIcon />
           </IconButton>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '10px',
-                background: '#e94560',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: 'white'
-              }}
-            >
-              H
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {/* ✅ LOGO - Your actual logo image */}
+            <Avatar 
+              src="/logo.png" 
+              sx={{ 
+                width: 32, 
+                height: 32, 
+                border: '2px solid rgba(255,255,255,0.2)',
+                bgcolor: 'transparent'
+              }} 
+            />
             <Typography
               sx={{
                 color: 'white',
                 fontWeight: 700,
-                fontSize: '1.1rem',
-                display: { xs: 'none', sm: 'block' }
+                fontSize: { xs: '1rem', sm: '1.1rem' },
+                display: { xs: 'block', sm: 'block' }
               }}
             >
               Hostel<span style={{ color: '#e94560' }}>Finder</span>
@@ -110,8 +105,37 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           </Box>
         </Box>
 
-        {/* Right: User */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* Center: Location */}
+        <Box
+          sx={{
+            display: { xs: 'none', md: 'flex' },
+            alignItems: 'center',
+            gap: 0.5,
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: '0.8rem'
+          }}
+        >
+          <LocationIcon sx={{ fontSize: 16 }} />
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+            Kumasi, Ghana
+          </Typography>
+        </Box>
+
+        {/* Right: Language + User */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {/* Language */}
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'rgba(255,255,255,0.6)',
+              display: { xs: 'none', sm: 'block' },
+              cursor: 'pointer',
+              fontWeight: 500
+            }}
+          >
+            ENGLISH
+          </Typography>
+
           {user ? (
             <Avatar
               src={user.avatar}
@@ -149,7 +173,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
         </Box>
       </Box>
 
-      {/* Welcome Section - Smaller */}
+      {/* Welcome Section with Location */}
       <Box sx={{ position: 'relative', zIndex: 1, mb: 1.5 }}>
         <Typography
           sx={{
@@ -162,19 +186,36 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           Discover <br />
           <span style={{ color: '#e94560' }}>Your New</span> Space
         </Typography>
+        
+        {/* ✅ Location under welcome text */}
         <Typography
           variant="body2"
           sx={{
             color: 'rgba(255,255,255,0.6)',
-            fontSize: { xs: '0.8rem', sm: '0.9rem' },
-            mt: 0.5
+            fontSize: { xs: '0.75rem', sm: '0.85rem' },
+            mt: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5
+          }}
+        >
+          <LocationIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }} />
+          Kumasi, Ghana
+        </Typography>
+        
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: { xs: '0.7rem', sm: '0.8rem' },
+            mt: 0.2
           }}
         >
           Where comfort meets convenience
         </Typography>
       </Box>
 
-      {/* Search Bar - Smaller */}
+      {/* Search Bar */}
       <Paper
         elevation={0}
         sx={{
@@ -218,7 +259,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
         />
       </Paper>
 
-      {/* Category Chips - Smaller */}
+      {/* Category Chips */}
       <Box
         sx={{
           display: 'flex',
