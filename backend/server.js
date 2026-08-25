@@ -327,9 +327,12 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
-// Create hostel
+// Create hostel - WITH CATEGORY
 app.post('/api/hostels', authenticate, async (req, res) => {
-  const { name, address, city, state, zip_code, description, price_per_year, amenities, images, available } = req.body;
+  const { 
+    name, address, city, state, zip_code, description, 
+    price_per_year, amenities, images, available, category 
+  } = req.body;
 
   if (!name || !address || !city || !price_per_year) {
     return res.status(400).json({ error: 'Name, address, city, and price are required' });
@@ -341,26 +344,17 @@ app.post('/api/hostels', authenticate, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images, available)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images, available, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        name, 
-        address, 
-        city, 
-        state, 
-        zip_code, 
-        description, 
-        parseFloat(price_per_year), 
-        amenities || [], 
-        req.user.id, 
-        images || [], 
-        available !== false  // ✅ Default to true if not provided
+        name, address, city, state, zip_code, description, 
+        parseFloat(price_per_year), amenities || [], req.user.id, 
+        images || [], available !== false, category || 'hostel'
       ]
     );
     
-    console.log('✅ Hostel created with images:', result.rows[0].images);
-    console.log('✅ Available:', result.rows[0].available);
+    console.log('✅ Hostel created:', result.rows[0].name, 'Category:', result.rows[0].category);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('❌ Error creating hostel:', err);
@@ -368,7 +362,7 @@ app.post('/api/hostels', authenticate, async (req, res) => {
   }
 });
 
-// Update hostel - ONLY UPDATES FIELDS THAT ARE SENT
+// Update hostel - WITH CATEGORY
 app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
@@ -377,7 +371,6 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
   console.log('📦 Fields to update:', Object.keys(updates));
   
   try {
-    // Check authorization
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
     if (check.rows.length === 0) {
       return res.status(404).json({ error: 'Hostel not found' });
@@ -386,12 +379,10 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    // Build dynamic UPDATE query
     const fields = [];
     const values = [];
     let paramCount = 1;
 
-    // Only add fields that are actually sent
     if (updates.name !== undefined) {
       fields.push(`name = $${paramCount++}`);
       values.push(updates.name);
@@ -430,8 +421,12 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
     }
     if (updates.available !== undefined) {
       fields.push(`available = $${paramCount++}`);
-      // ✅ Convert to proper boolean
       values.push(updates.available === true || updates.available === 'true');
+    }
+    // ✅ ADD CATEGORY
+    if (updates.category !== undefined) {
+      fields.push(`category = $${paramCount++}`);
+      values.push(updates.category || 'hostel');
     }
 
     if (fields.length === 0) {
@@ -450,17 +445,14 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Hostel not found' });
     }
     
-    console.log('✅ Hostel updated:', result.rows[0]);
+    console.log('✅ Hostel updated:', result.rows[0].name, 'Category:', result.rows[0].category);
     res.json({ 
       message: 'Hostel updated successfully', 
       hostel: result.rows[0] 
     });
   } catch (err) {
     console.error('❌ Error updating hostel:', err);
-    res.status(500).json({ 
-      error: 'Failed to update hostel',
-      details: err.message 
-    });
+    res.status(500).json({ error: 'Failed to update hostel' });
   }
 });
 

@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 're
 import { useTranslation } from 'react-i18next';
 import ModernHeader from './components/ModernHeader';
 import MobileSidebar from './components/MobileSidebar';
+import CategoryFilter from './components/CategoryFilter';
 import {
   Typography,
   Button,
@@ -123,14 +124,16 @@ function HomePage() {
   });
   const [showDeveloperInfo, setShowDeveloperInfo] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // ✅ CATEGORY STATE
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ===== MENU STATE =====
   const [anchorEl, setAnchorEl] = useState(null);
@@ -206,7 +209,6 @@ function HomePage() {
     window.location.href = '/';
   };
 
-  // ✅ FIXED: handleBookNow function - defined before HostelCard uses it
   const handleBookNow = (hostel) => {
     console.log('📖 Book Now clicked for:', hostel.name);
     setBookingDialog(hostel);
@@ -283,10 +285,29 @@ function HomePage() {
     }
   };
 
-  const filteredHostels = hostels.filter(hostel =>
-    hostel.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    hostel.city?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // ✅ FILTERED HOSTELS WITH CATEGORY
+  const getFilteredHostels = () => {
+    let filtered = hostels;
+    
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(hostel =>
+        hostel.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        hostel.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(hostel => 
+        hostel.category === selectedCategory
+      );
+    }
+    
+    return filtered;
+  };
+
+  const filteredHostels = getFilteredHostels();
 
   // ============================================
 // ✅ LUXURY HOSTEL CARD - FIXED BOOK NOW
@@ -312,22 +333,19 @@ const HostelCard = ({ hostel }) => {
   const bathroomCount = Math.floor(roomCount / 2) + 1;
   const sqft = (roomCount * 150) + 50;
 
-  // ✅ Card click - only navigates
   const handleCardClick = (e) => {
-    // Don't navigate if clicking on button
     if (e.target.closest('button')) {
       return;
     }
     navigate(`/hostel/${hostel.id}`);
   };
 
-  // ✅ FIXED: Book now click - directly calls handleBookNow from parent
   const onBookNow = (e) => {
     e.stopPropagation();
     e.preventDefault();
     console.log('🔄 Book Now clicked for:', hostel.name);
     if (hostel.available !== false) {
-      handleBookNow(hostel);  // ← This now works because handleBookNow is in scope
+      handleBookNow(hostel);
     } else {
       alert('This hostel is currently unavailable.');
     }
@@ -817,14 +835,25 @@ const HostelCard = ({ hostel }) => {
         navigate={navigate}
       />
 
+      {/* ✅ CATEGORY FILTER - ADDED */}
+      <CategoryFilter 
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+      />
+
       {/* Property Cards */}
       <Box sx={{ px: 2, mt: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e', mb: 2, fontSize: '1rem' }}>
-          Popular Properties
+          {selectedCategory === 'all' ? 'Popular Properties' : 
+           selectedCategory === 'hostel' ? '🏘️ Hostels' : '🏡 Homestels'}
         </Typography>
         
         {loading ? (
           <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>Loading hostels...</Typography>
+        ) : filteredHostels.length === 0 ? (
+          <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>
+            No {selectedCategory !== 'all' ? selectedCategory : ''} properties found
+          </Typography>
         ) : (
           <Grid container spacing={2}>
             {filteredHostels.slice(0, 6).map((hostel) => (
@@ -866,7 +895,7 @@ const HostelCard = ({ hostel }) => {
         </BottomNavigation>
       </Paper>
 
-      {/* ✅ BOOKING DIALOG - ADD THIS */}
+      {/* ✅ BOOKING DIALOG */}
       <Dialog
         open={!!bookingDialog}
         onClose={() => {
@@ -1182,6 +1211,12 @@ const HostelCard = ({ hostel }) => {
           </Box>
         </Box>
 
+        {/* ✅ CATEGORY FILTER - DESKTOP VIEW */}
+        <CategoryFilter 
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+
         {showMap && <Box sx={{ mb: 4 }}><HostelMapLeaflet hostels={filteredHostels} /></Box>}
 
         {!showMap && (
@@ -1227,10 +1262,15 @@ const HostelCard = ({ hostel }) => {
         {!showMap && (
           <>
             <Typography variant="h6" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e', mb: 3 }}>
-              ✦ Luxury Properties
+              {selectedCategory === 'all' ? '✦ Luxury Properties' : 
+               selectedCategory === 'hostel' ? '✦ Hostels' : '✦ Homestels'}
             </Typography>
             {loading ? (
               <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>Loading hostels...</Typography>
+            ) : filteredHostels.length === 0 ? (
+              <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>
+                No {selectedCategory !== 'all' ? selectedCategory : ''} properties found
+              </Typography>
             ) : (
               <Grid container spacing={3}>
                 {filteredHostels.map((hostel) => (

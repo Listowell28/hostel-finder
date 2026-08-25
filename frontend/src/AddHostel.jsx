@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   Box, Paper, TextField, Button, Typography, Alert,
-  Grid, Chip, Divider, CircularProgress, InputAdornment,
-  Switch, FormControlLabel
+  Grid, Chip, Divider, CircularProgress, FormControl,
+  FormLabel, RadioGroup, FormControlLabel, Radio,
+  Switch, FormControlLabel as SwitchLabel
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -25,7 +26,8 @@ function AddHostel({ onHostelAdded }) {
     description: '',
     price_per_year: '',
     amenities: '',
-    available: true  // ✅ Added available field
+    available: true,
+    category: 'hostel'  // ✅ Added category
   });
   const [images, setImages] = useState([]);
   const [error, setError] = useState('');
@@ -65,11 +67,11 @@ function AddHostel({ onHostelAdded }) {
       price_per_year: parseFloat(form.price_per_year),
       amenities: amenitiesArray,
       images: images,
-      available: form.available !== false  // ✅ Add availability
+      available: form.available !== false,
+      category: form.category  // ✅ Send category
     };
 
-    console.log('📤 Sending images:', images);
-    console.log('📤 Available:', form.available);
+    console.log('📤 Sending:', hostelData);
 
     try {
       const res = await fetch(`${API_URL}/api/hostels`, {
@@ -94,7 +96,8 @@ function AddHostel({ onHostelAdded }) {
         description: '',
         price_per_year: '',
         amenities: '',
-        available: true
+        available: true,
+        category: 'hostel'
       });
       setImages([]);
       if (onHostelAdded) onHostelAdded();
@@ -124,6 +127,59 @@ function AddHostel({ onHostelAdded }) {
 
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
+            {/* ✅ CATEGORY SELECTION */}
+            <Grid item xs={12}>
+              <FormControl component="fieldset" sx={{ width: '100%' }}>
+                <FormLabel component="legend" sx={{ fontWeight: 600, color: '#1a1a2e', mb: 1 }}>
+                  Property Type
+                </FormLabel>
+                <RadioGroup
+                  row
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  sx={{ gap: 2 }}
+                >
+                  <FormControlLabel
+                    value="hostel"
+                    control={<Radio sx={{ color: '#e94560', '&.Mui-checked': { color: '#e94560' } }} />}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span style={{ fontSize: '20px' }}>🏘️</span>
+                        <span>Hostel</span>
+                      </Box>
+                    }
+                    sx={{
+                      border: form.category === 'hostel' ? '2px solid #e94560' : '1px solid #ddd',
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1,
+                      width: 'auto',
+                      bgcolor: form.category === 'hostel' ? 'rgba(233,69,96,0.05)' : 'transparent'
+                    }}
+                  />
+                  <FormControlLabel
+                    value="homestel"
+                    control={<Radio sx={{ color: '#e94560', '&.Mui-checked': { color: '#e94560' } }} />}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span style={{ fontSize: '20px' }}>🏡</span>
+                        <span>Homestel</span>
+                      </Box>
+                    }
+                    sx={{
+                      border: form.category === 'homestel' ? '2px solid #e94560' : '1px solid #ddd',
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1,
+                      width: 'auto',
+                      bgcolor: form.category === 'homestel' ? 'rgba(233,69,96,0.05)' : 'transparent'
+                    }}
+                  />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -231,7 +287,7 @@ function AddHostel({ onHostelAdded }) {
               )}
             </Grid>
 
-            {/* ✅ AVAILABILITY TOGGLE - ADDED HERE */}
+            {/* ✅ AVAILABILITY TOGGLE */}
             <Grid item xs={12}>
               <Box sx={{ 
                 display: 'flex', 
