@@ -799,7 +799,7 @@ const HostelCard = ({ hostel }) => {
  if (isMobile) {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa', pb: 8 }}>
-      {/* Modern Header */}
+      {/* ✅ Modern Header */}
       <ModernHeader 
         user={user} 
         onMenuClick={() => setSidebarOpen(true)}
