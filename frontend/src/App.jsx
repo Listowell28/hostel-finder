@@ -1,5 +1,6 @@
 // frontend/src/App.jsx
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ModernHeader from './components/ModernHeader';
@@ -318,6 +319,7 @@ const HostelCard = ({ hostel }) => {
   const getImageUrl = () => {
     if (hostel.images && hostel.images.length > 0) {
       const img = hostel.images[0];
+      // ✅ Fixed: startsWith (capital S)
       if (img.startsWith('http')) return img;
       if (img.startsWith('/uploads')) return `${API_URL}${img}`;
       return img;
@@ -333,6 +335,7 @@ const HostelCard = ({ hostel }) => {
   const bathroomCount = Math.floor(roomCount / 2) + 1;
   const sqft = (roomCount * 150) + 50;
 
+  // ✅ Card click - only navigates
   const handleCardClick = (e) => {
     if (e.target.closest('button')) {
       return;
@@ -340,6 +343,7 @@ const HostelCard = ({ hostel }) => {
     navigate(`/hostel/${hostel.id}`);
   };
 
+  // ✅ Book now click
   const onBookNow = (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -357,8 +361,8 @@ const HostelCard = ({ hostel }) => {
       sx={{
         borderRadius: 4,
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: 'pointer',
         height: 420,
         display: 'flex',
@@ -367,7 +371,7 @@ const HostelCard = ({ hostel }) => {
         position: 'relative',
         '&:hover': {
           transform: 'translateY(-8px)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+          boxShadow: '0 20px 60px rgba(233,69,96,0.15)',
           '& .hostel-image-overlay': {
             opacity: 1,
           }
@@ -397,6 +401,7 @@ const HostelCard = ({ hostel }) => {
                 e.target.style.display = 'none';
               }}
             />
+            {/* Modern Gradient Overlay */}
             <Box
               className="hostel-image-overlay"
               sx={{
@@ -447,13 +452,13 @@ const HostelCard = ({ hostel }) => {
           </Box>
         )}
 
-        {/* Price Badge */}
+        {/* Price Badge - Modern */}
         <Box
           sx={{
             position: 'absolute',
             bottom: 16,
             left: 16,
-            bgcolor: 'rgba(0,0,0,0.75)',
+            bgcolor: 'rgba(0,0,0,0.7)',
             color: 'white',
             px: 2,
             py: 1,
@@ -461,7 +466,7 @@ const HostelCard = ({ hostel }) => {
             fontWeight: 700,
             fontSize: '15px',
             backdropFilter: 'blur(8px)',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
             display: 'flex',
             alignItems: 'baseline',
             gap: 0.2
@@ -481,13 +486,13 @@ const HostelCard = ({ hostel }) => {
           </Typography>
         </Box>
 
-        {/* Rating Badge */}
+        {/* Rating Badge - Modern */}
         <Box
           sx={{
             position: 'absolute',
             top: 16,
             right: 16,
-            bgcolor: 'rgba(0,0,0,0.75)',
+            bgcolor: 'rgba(0,0,0,0.7)',
             color: '#ffd700',
             px: 1.5,
             py: 0.5,
@@ -505,13 +510,13 @@ const HostelCard = ({ hostel }) => {
           {hostel.rating || '4.9'}
         </Box>
 
-        {/* Available / Unavailable Badge */}
+        {/* Available / Unavailable Badge - Modern */}
         <Box
           sx={{
             position: 'absolute',
             bottom: 16,
             right: 16,
-            bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.92)' : 'rgba(233,69,96,0.92)',
+            bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.9)' : 'rgba(233,69,96,0.9)',
             color: 'white',
             px: 1.5,
             py: 0.5,
@@ -630,7 +635,7 @@ const HostelCard = ({ hostel }) => {
           </Box>
         </Box>
 
-        {/* ✅ BOOK NOW BUTTON - FIXED */}
+        {/* Book Now Button - Modern */}
         {user ? (
           (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
             <Button
