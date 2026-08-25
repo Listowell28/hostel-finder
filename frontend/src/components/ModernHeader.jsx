@@ -47,7 +47,6 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
         const { latitude, longitude } = position.coords;
         
         try {
-          // Reverse geocode to get city name
           const response = await fetch(
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
           );
@@ -88,7 +87,11 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
         pt: { xs: 3, sm: 4 },
         pb: { xs: 3, sm: 4 },
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        // ✅ FULLY ROUNDED CORNERS - ALL SIDES
+        borderRadius: { xs: '24px', sm: '32px', md: '40px' },
+        mx: { xs: 1, sm: 2, md: 3 },
+        mt: { xs: 1, sm: 2, md: 3 },
       }}
     >
       {/* Background decorative circles */}
