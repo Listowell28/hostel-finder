@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Box,
   Typography,
@@ -18,8 +17,7 @@ import {
   LocationOn as LocationIcon,
   Menu as MenuIcon,
   Person as PersonIcon,
-  MyLocation as MyLocationIcon,
-  FilterList as FilterIcon
+  MyLocation as MyLocationIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -65,215 +63,237 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
   return (
     <Box
       sx={{
+        background: darkMode 
+          ? 'linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%)' 
+          : 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+        px: { xs: 2, sm: 3 },
+        pt: { xs: 1.5, sm: 2 },
+        pb: { xs: 2, sm: 2.5 },
+        borderRadius: { xs: '20px', sm: '28px' },
+        mx: { xs: 1, sm: 2 },
+        mt: { xs: 1, sm: 2 },
         position: 'relative',
-        minHeight: { xs: '85vh', sm: '80vh', md: '75vh' },
-        display: 'flex',
-        alignItems: 'center',
-        background: darkMode
-          ? 'linear-gradient(160deg, #0a0a1a 0%, #1a1a2e 40%, #16213e 100%)'
-          : 'linear-gradient(160deg, #0f0c29 0%, #302b63 40%, #24243e 100%)',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: '-50%',
-          right: '-30%',
-          width: '80%',
-          height: '80%',
-          background: 'radial-gradient(circle, rgba(233,69,96,0.08) 0%, transparent 70%)',
-          borderRadius: '50%',
-          pointerEvents: 'none'
-        },
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          bottom: '-40%',
-          left: '-20%',
-          width: '60%',
-          height: '60%',
-          background: 'radial-gradient(circle, rgba(233,69,96,0.05) 0%, transparent 70%)',
-          borderRadius: '50%',
-          pointerEvents: 'none'
-        }
+        overflow: 'hidden'
       }}
     >
+      {/* Decorative circles - subtle */}
       <Box
         sx={{
+          position: 'absolute',
+          top: -80,
+          right: -60,
+          width: 180,
+          height: 180,
+          borderRadius: '50%',
+          background: 'rgba(233,69,96,0.06)',
+          pointerEvents: 'none'
+        }}
+      />
+
+      {/* ✅ TOP BAR - Compact */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: { xs: 1.5, sm: 2 },
           position: 'relative',
-          zIndex: 2,
-          width: '100%',
-          px: { xs: 3, sm: 4, md: 6 },
-          py: { xs: 4, sm: 6 }
+          zIndex: 1
         }}
       >
-        {/* Top Bar */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={onMenuClick} sx={{ color: 'white' }}>
-              <MenuIcon />
-            </IconButton>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '1.3rem' }}>
-              Hostel<span style={{ color: '#e94560' }}>Finder</span>
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {user ? (
-              <Avatar
-                onClick={() => navigate('/profile')}
-                sx={{ bgcolor: '#e94560', cursor: 'pointer', width: 40, height: 40 }}
-              >
-                {user.full_name?.charAt(0) || 'U'}
-              </Avatar>
-            ) : (
-              <Button
-                variant="contained"
-                onClick={() => navigate('/login')}
-                sx={{
-                  bgcolor: '#e94560',
-                  borderRadius: '50px',
-                  px: 3,
-                  py: 1,
-                  '&:hover': { bgcolor: '#c73652' }
-                }}
-              >
-                Login
-              </Button>
-            )}
-          </Box>
+        {/* Left: Menu + Logo */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            onClick={onMenuClick}
+            sx={{ color: 'white', p: 0.5 }}
+          >
+            <MenuIcon sx={{ fontSize: { xs: 22, sm: 26 } }} />
+          </IconButton>
+          
+          <Typography
+            sx={{
+              color: 'white',
+              fontWeight: 700,
+              fontSize: { xs: '1rem', sm: '1.1rem' },
+              letterSpacing: '-0.3px'
+            }}
+          >
+            Hostel<span style={{ color: '#e94560' }}>Finder</span>
+          </Typography>
         </Box>
 
-        {/* Hero Content */}
-        <Box sx={{ maxWidth: '800px', mx: 'auto', textAlign: 'center' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <Typography
-              variant="h1"
+        {/* Right: User */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {user ? (
+            <Avatar
+              src={user.avatar}
               sx={{
-                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
-                fontWeight: 800,
-                color: 'white',
-                mb: 2,
-                lineHeight: 1.1,
-                background: 'linear-gradient(135deg, #ffffff 0%, #e94560 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
+                width: { xs: 28, sm: 32 },
+                height: { xs: 28, sm: 32 },
+                bgcolor: '#e94560',
+                cursor: 'pointer',
+                border: '2px solid rgba(255,255,255,0.12)',
+                fontSize: '12px'
               }}
+              onClick={() => navigate('/profile')}
             >
-              Find Your Perfect Space
-            </Typography>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <Typography
-              variant="h6"
+              {user.full_name?.charAt(0) || 'U'}
+            </Avatar>
+          ) : (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => navigate('/login')}
               sx={{
-                color: 'rgba(255,255,255,0.7)',
-                mb: 3,
-                fontSize: '1.1rem',
-                fontWeight: 300
-              }}
-            >
-              Discover the best hostels and homestels in Kumasi, Ghana
-            </Typography>
-          </motion.div>
-
-          {/* Search Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <Paper
-              sx={{
-                p: { xs: 0.5, sm: 1 },
-                borderRadius: '60px',
-                background: 'rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                maxWidth: '700px',
-                mx: 'auto'
-              }}
-            >
-              <TextField
-                fullWidth
-                placeholder="Search for hostels, homestels..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                variant="standard"
-                InputProps={{
-                  disableUnderline: true,
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'rgba(255,255,255,0.4)' }} />
-                    </InputAdornment>
-                  ),
-                  sx: {
-                    color: 'white',
-                    px: 2,
-                    py: 1,
-                    '&::placeholder': { color: 'rgba(255,255,255,0.4)' }
-                  }
-                }}
-              />
-              <Button
-                variant="contained"
-                sx={{
-                  bgcolor: '#e94560',
-                  borderRadius: '50px',
-                  px: { xs: 2, sm: 4 },
-                  py: { xs: 1, sm: 1.5 },
-                  '&:hover': { bgcolor: '#c73652' }
-                }}
-              >
-                Search
-              </Button>
-            </Paper>
-          </motion.div>
-
-          {/* Location Badge */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 1,
-                mt: 3,
-                px: 2,
-                py: 1,
+                bgcolor: '#e94560',
                 borderRadius: '50px',
-                background: 'rgba(255,255,255,0.06)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255,255,255,0.06)'
+                px: { xs: 2, sm: 2.5 },
+                py: 0.5,
+                fontSize: { xs: '10px', sm: '12px' },
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': { bgcolor: '#c73652' }
               }}
             >
-              <LocationIcon sx={{ color: '#e94560', fontSize: '18px' }} />
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                {isLocating ? 'Detecting...' : location}
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={detectLocation}
-                sx={{ color: 'rgba(255,255,255,0.4)', p: 0.3 }}
-              >
-                <MyLocationIcon sx={{ fontSize: 14 }} />
-              </IconButton>
-            </Box>
-          </motion.div>
+              Login
+            </Button>
+          )}
         </Box>
+      </Box>
+
+      {/* ✅ LOCATION + WELCOME - Compact */}
+      <Box sx={{ position: 'relative', zIndex: 1, mb: { xs: 1, sm: 1.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+          <LocationIcon sx={{ color: '#e94560', fontSize: { xs: 16, sm: 18 } }} />
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'rgba(255,255,255,0.6)',
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5
+            }}
+          >
+            {isLocating ? (
+              <>
+                <CircularProgress size={12} sx={{ color: 'rgba(255,255,255,0.4)' }} />
+                Detecting...
+              </>
+            ) : (
+              location
+            )}
+            <IconButton
+              size="small"
+              onClick={detectLocation}
+              sx={{
+                color: 'rgba(255,255,255,0.3)',
+                p: 0.2,
+                '&:hover': { color: '#e94560' }
+              }}
+            >
+              <MyLocationIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+          </Typography>
+        </Box>
+
+        <Typography
+          sx={{
+            color: 'white',
+            fontWeight: 700,
+            fontSize: { xs: '1.1rem', sm: '1.3rem' },
+            mt: 0.3,
+            lineHeight: 1.2
+          }}
+        >
+          Let's find you <br />
+          <span style={{ color: '#e94560' }}>the best home</span>
+        </Typography>
+      </Box>
+
+      {/* ✅ SEARCH BAR - Compact */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 0.5, sm: 0.8 },
+          borderRadius: '50px',
+          background: 'rgba(255,255,255,0.07)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        <TextField
+          fullWidth
+          placeholder="Search any place"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          variant="standard"
+          InputProps={{
+            disableUnderline: true,
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'rgba(255,255,255,0.35)', fontSize: { xs: 18, sm: 20 } }} />
+              </InputAdornment>
+            ),
+            sx: {
+              color: 'white',
+              fontSize: { xs: '0.8rem', sm: '0.9rem' },
+              '&::placeholder': {
+                color: 'rgba(255,255,255,0.3)'
+              }
+            }
+          }}
+          sx={{
+            '& .MuiInputBase-root': {
+              px: { xs: 1, sm: 1.5 },
+              py: { xs: 0.5, sm: 0.8 }
+            }
+          }}
+        />
+      </Paper>
+
+      {/* ✅ CATEGORY PILLS - Compact */}
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 0.8,
+          flexWrap: 'wrap',
+          mt: { xs: 1.5, sm: 2 },
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        {[
+          { name: 'All', icon: '🏠' },
+          { name: 'Hostels', icon: '🏘️' },
+          { name: 'Homestels', icon: '🏡' }
+        ].map((category) => (
+          <Button
+            key={category.name}
+            size="small"
+            sx={{
+              borderRadius: '50px',
+              bgcolor: 'rgba(255,255,255,0.06)',
+              color: 'white',
+              px: { xs: 1.5, sm: 2 },
+              py: { xs: 0.3, sm: 0.5 },
+              fontSize: { xs: '0.65rem', sm: '0.75rem' },
+              fontWeight: 500,
+              textTransform: 'none',
+              border: '1px solid rgba(255,255,255,0.04)',
+              '&:hover': {
+                bgcolor: 'rgba(233,69,96,0.2)',
+                borderColor: '#e94560'
+              }
+            }}
+          >
+            <span style={{ marginRight: '4px' }}>{category.icon}</span>
+            {category.name}
+          </Button>
+        ))}
       </Box>
     </Box>
   );
