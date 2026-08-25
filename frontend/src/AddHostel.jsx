@@ -27,7 +27,7 @@ function AddHostel({ onHostelAdded }) {
     price_per_year: '',
     amenities: '',
     available: true,
-    category: 'hostel'  // ✅ Added category
+    category: 'hostel'
   });
   const [images, setImages] = useState([]);
   const [error, setError] = useState('');
@@ -68,7 +68,7 @@ function AddHostel({ onHostelAdded }) {
       amenities: amenitiesArray,
       images: images,
       available: form.available !== false,
-      category: form.category  // ✅ Send category
+      category: form.category
     };
 
     console.log('📤 Sending:', hostelData);
@@ -300,7 +300,7 @@ function AddHostel({ onHostelAdded }) {
               }}>
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a2e' }}>
-                    📌 Availability Status
+                     Availability Status
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#8892b0' }}>
                     {form.available !== false ? 'Hostel will be visible and bookable' : 'Hostel will be hidden as unavailable'}
