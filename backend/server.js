@@ -328,6 +328,7 @@ app.get('/api/hostels/:id', async (req, res) => {
 });
 
 // Create hostel - WITH CATEGORY
+// Create hostel - WITH CATEGORY
 app.post('/api/hostels', authenticate, async (req, res) => {
   const { 
     name, address, city, state, zip_code, description, 
@@ -348,9 +349,18 @@ app.post('/api/hostels', authenticate, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        name, address, city, state, zip_code, description, 
-        parseFloat(price_per_year), amenities || [], req.user.id, 
-        images || [], available !== false, category || 'hostel'
+        name, 
+        address, 
+        city, 
+        state, 
+        zip_code, 
+        description, 
+        parseFloat(price_per_year), 
+        amenities || [], 
+        req.user.id, 
+        images || [], 
+        available !== false, 
+        category || 'hostel'
       ]
     );
     
