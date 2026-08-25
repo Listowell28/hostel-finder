@@ -357,7 +357,7 @@ app.post('/api/hostels', authenticate, async (req, res) => {
         description, 
         parseFloat(price_per_year), 
         amenities || [], 
-        req.user.id, 
+        req.user.id,
         images || [], 
         available !== false, 
         category || 'hostel'
