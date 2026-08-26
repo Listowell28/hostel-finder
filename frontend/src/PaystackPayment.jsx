@@ -1,36 +1,39 @@
 import { useState } from 'react';
+import { usePaystackPayment } from 'react-paystack';
 import {
-  Box, Paper, Typography, Button, CircularProgress,
-  Alert, Divider, Chip
+  Box,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 
-function PaystackPayment({ bookingId, amount, email, onSuccess, onCancel }) {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+function PaystackPayment({ 
+  bookingId, 
+  amount, 
+  email, 
+  onSuccess, 
+  onClose 
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [reference, setReference] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-  const handlePay = async () => {
+  // ✅ Initialize payment
+  const initializePayment = async () => {
     setLoading(true);
     setError('');
 
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      setError('Please login first');
-      setLoading(false);
-      return;
-    }
-
     try {
-      console.log('💳 Initializing payment...');
-      console.log('Booking ID:', bookingId);
-      console.log('Amount:', amount);
-      console.log('Email:', email);
-
-      // Initialize payment
-      const res = await fetch(`${API_URL}/api/paystack/initialize`, {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/api/paystack/initialize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,120 +41,130 @@ function PaystackPayment({ bookingId, amount, email, onSuccess, onCancel }) {
         },
         body: JSON.stringify({
           bookingId,
-          amount: parseFloat(amount),
-          email: email || 'customer@example.com'
+          amount,
+          email
         })
       });
 
-      console.log('📡 Response status:', res.status);
+      const data = await response.json();
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Payment initialization failed');
+      if (!response.ok) {
+        throw new Error(data.error || 'Payment initialization failed');
       }
 
-      const data = await res.json();
-      console.log('📡 Payment data:', data);
-
-      if (!data.authorization_url) {
+      // ✅ Redirect to Paystack
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
         throw new Error('No authorization URL received');
       }
 
-      // Open Paystack popup
-      const paystackPopup = window.open(
-        data.authorization_url,
-        '_blank',
-        'width=600,height=700,scrollbars=yes'
-      );
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
-      if (!paystackPopup) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
+  // ✅ Handle payment callback (when user returns from Paystack)
+  const verifyPayment = async (reference) => {
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_URL}/api/paystack/verify/${reference}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (onSuccess) onSuccess(data);
+        alert('✅ Payment successful! Your booking is confirmed.');
+      } else {
+        setError(data.message || 'Payment verification failed');
       }
 
-      // Poll for payment completion
-      const checkPayment = setInterval(async () => {
-        try {
-          console.log('🔍 Checking payment status...');
-          const verifyRes = await fetch(`${API_URL}/api/paystack/verify/${data.reference}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          
-          const verifyData = await verifyRes.json();
-          console.log('📡 Verification data:', verifyData);
-
-          if (verifyData.success) {
-            clearInterval(checkPayment);
-            setSuccess('✅ Payment successful! Booking confirmed.');
-            setTimeout(() => {
-              if (onSuccess) onSuccess(verifyData.bookingId);
-            }, 1500);
-          }
-        } catch (err) {
-          console.error('Verification error:', err);
-        }
-      }, 3000);
-
     } catch (err) {
-      console.error('❌ Payment error:', err);
-      setError(err.message || 'Payment failed. Please try again.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Format price
-  const formattedPrice = parseFloat(amount).toFixed(2);
+  // ✅ Check if returning from Paystack
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('reference');
+    
+    if (ref) {
+      setReference(ref);
+      verifyPayment(ref);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   return (
-    <Paper sx={{ p: 4, borderRadius: 3, maxWidth: 500, mx: 'auto' }}>
-      <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 2 }}>
-        💳 Pay with Paystack
-      </Typography>
-      <Typography variant="body2" sx={{ color: '#8892b0', mb: 3 }}>
-        Pay securely with card, mobile money, or bank transfer
-      </Typography>
-
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-          Amount: GH₵{formattedPrice}
+    <Dialog open={true} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          💳 Complete Payment
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Chip label="💳 Card" size="small" sx={{ bgcolor: '#e94560', color: 'white' }} />
-          <Chip label="📱 Mobile Money" size="small" sx={{ bgcolor: '#0f3460', color: 'white' }} />
-          <Chip label="🏦 Bank Transfer" size="small" sx={{ bgcolor: '#2d3436', color: 'white' }} />
-        </Box>
-        <Divider sx={{ mt: 2 }} />
-      </Box>
+      </DialogTitle>
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        <Button
-          variant="outlined"
-          fullWidth
-          onClick={onCancel}
-          sx={{ borderRadius: 50 }}
-        >
+      <DialogContent>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        )}
+
+        <Box sx={{ my: 2 }}>
+          <Typography variant="body2" sx={{ color: '#8892b0' }}>
+            Amount to pay:
+          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+            GH₵{amount.toFixed(2)}
+          </Typography>
+        </Box>
+
+        <Box sx={{ 
+          p: 2, 
+          bgcolor: '#f5f7fa', 
+          borderRadius: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <span style={{ fontSize: '24px' }}>🔒</span>
+          <Typography variant="caption" sx={{ color: '#8892b0' }}>
+            Secured by Paystack. Your payment is safe and encrypted.
+          </Typography>
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ p: 3 }}>
+        <Button onClick={onClose} sx={{ color: '#8892b0' }}>
           Cancel
         </Button>
         <Button
           variant="contained"
-          fullWidth
-          onClick={handlePay}
+          onClick={initializePayment}
           disabled={loading}
           sx={{
             bgcolor: '#e94560',
             borderRadius: 50,
+            px: 4,
+            py: 1.5,
+            fontWeight: 600,
             '&:hover': { bgcolor: '#c73652' }
           }}
         >
           {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Pay Now'}
         </Button>
-      </Box>
-    </Paper>
+      </DialogActions>
+    </Dialog>
   );
 }
 

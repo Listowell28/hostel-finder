@@ -868,11 +868,12 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
 
 const Paystack = require('paystack')(process.env.PAYSTACK_SECRET_KEY);
 
-// Initialize payment
+// ✅ Initialize payment
 app.post('/api/paystack/initialize', authenticate, async (req, res) => {
   const { bookingId, amount, email } = req.body;
 
   try {
+    // Get booking details
     const booking = await pool.query(
       `SELECT bookings.*, hostels.name as hostel_name 
        FROM bookings 
@@ -885,28 +886,30 @@ app.post('/api/paystack/initialize', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    // ✅ Initialize Paystack transaction
     const response = await Paystack.transaction.initialize({
-      amount: Math.round(parseFloat(amount) * 100),
+      amount: Math.round(parseFloat(amount) * 100), // Paystack uses kobo (GHS * 100)
       email: email || req.user.email,
       metadata: {
         bookingId: bookingId,
         userId: req.user.id,
         hostelName: booking.rows[0].hostel_name
       },
-      callback_url: `http://localhost:5173/payment-callback`,
+      callback_url: `${process.env.FRONTEND_URL}/payment-callback`, // ✅ Use FRONTEND_URL
     });
 
     res.json({
       authorization_url: response.data.authorization_url,
       reference: response.data.reference,
     });
+
   } catch (err) {
     console.error('Paystack error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Verify payment
+// ✅ Verify payment
 app.get('/api/paystack/verify/:reference', authenticate, async (req, res) => {
   const { reference } = req.params;
 
@@ -917,6 +920,7 @@ app.get('/api/paystack/verify/:reference', authenticate, async (req, res) => {
       const bookingId = response.data.metadata?.bookingId;
 
       if (bookingId) {
+        // ✅ Update booking status
         await pool.query(
           'UPDATE bookings SET status = $1, payment_status = $2 WHERE id = $3',
           ['confirmed', 'paid', bookingId]

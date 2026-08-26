@@ -126,6 +126,7 @@ function HomePage() {
   const [showDeveloperInfo, setShowDeveloperInfo] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [paymentDialog, setPaymentDialog] = useState(null)
   
   // ✅ CATEGORY STATE
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -135,6 +136,7 @@ function HomePage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+}  
 
   // ===== MENU STATE =====
   const [anchorEl, setAnchorEl] = useState(null);
@@ -828,6 +830,7 @@ const HostelCard = ({ hostel }) => {
         onMenuClick={() => setSidebarOpen(true)}
         darkMode={darkMode}
       />
+      
 
       {/* Mobile Sidebar */}
       <MobileSidebar 
@@ -840,7 +843,7 @@ const HostelCard = ({ hostel }) => {
         navigate={navigate}
       />
 
-      {/* ✅ CATEGORY FILTER - ADDED */}
+      {/* ✅ CATEGORY FILTER */}
       <CategoryFilter 
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
@@ -900,7 +903,7 @@ const HostelCard = ({ hostel }) => {
         </BottomNavigation>
       </Paper>
 
-      {/* ✅ BOOKING DIALOG */}
+      {/* ✅ BOOKING DIALOG - MOBILE */}
       <Dialog
         open={!!bookingDialog}
         onClose={() => {
@@ -1021,7 +1024,85 @@ const HostelCard = ({ hostel }) => {
           </Button>
           <Button
             variant="contained"
-            onClick={handleConfirmBooking}
+            onClick={() => {
+              // ✅ First create booking, then proceed to payment
+              const createBookingAndPay = async () => {
+                // Validate
+                if (!phoneNumber) {
+                  setBookingError('Please enter your phone number');
+                  return;
+                }
+                if (!roomType) {
+                  setBookingError('Please select a room type');
+                  return;
+                }
+
+                const token = localStorage.getItem('token');
+                if (!token) {
+                  setBookingError('Please login first');
+                  return;
+                }
+
+                setBookingLoading(true);
+                setBookingError('');
+
+                try {
+                  let guestsCount = 1;
+                  if (roomType === '2 in a room') guestsCount = 2;
+                  else if (roomType === '3 in a room') guestsCount = 3;
+
+                  // ✅ Step 1: Create booking
+                  const bookingRes = await fetch(`${API_URL}/api/bookings`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      hostel_id: bookingDialog.id,
+                      phone_number: phoneNumber,
+                      room_type: roomType,
+                      guests: guestsCount
+                    })
+                  });
+
+                  const bookingData = await bookingRes.json();
+                  if (!bookingRes.ok) throw new Error(bookingData.error || 'Failed to create booking');
+
+                  const bookingId = bookingData.id;
+
+                  // ✅ Step 2: Initialize payment
+                  const paymentRes = await fetch(`${API_URL}/api/paystack/initialize`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      bookingId: bookingId,
+                      amount: bookingDialog.price_per_year,
+                      email: user.email
+                    })
+                  });
+
+                  const paymentData = await paymentRes.json();
+                  if (!paymentRes.ok) throw new Error(paymentData.error || 'Payment initialization failed');
+
+                  // ✅ Step 3: Redirect to Paystack
+                  if (paymentData.authorization_url) {
+                    window.location.href = paymentData.authorization_url;
+                  } else {
+                    throw new Error('No payment URL received');
+                  }
+
+                } catch (err) {
+                  setBookingError(err.message);
+                  setBookingLoading(false);
+                }
+              };
+
+              createBookingAndPay();
+            }}
             disabled={bookingLoading || !phoneNumber || !roomType}
             sx={{
               background: 'linear-gradient(135deg, #e94560, #c73652)',
@@ -1031,11 +1112,12 @@ const HostelCard = ({ hostel }) => {
               '&:hover': { background: 'linear-gradient(135deg, #c73652, #a82842)' }
             }}
           >
-            {bookingLoading ? 'Booking...' : 'Confirm'}
+            {bookingLoading ? 'Processing...' : 'Proceed to Payment 💳'}
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* ✅ DEVELOPER INFO - RESTORED */}
       <DeveloperInfo />
     </Box>
   );

@@ -24,7 +24,7 @@
     "passport": "^0.6.0",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
-    "paystack": "^1.0.0",
+    "paystack": "^1.4.1",
     "pg": "^8.9.0",
     "socket.io": "^4.5.4",
     "socket.io-client": "^4.5.4"
