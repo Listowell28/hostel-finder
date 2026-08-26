@@ -36,7 +36,7 @@ router.post('/initialize', auth, async (req, res) => {
                     booking_id: bookingId,
                     user_id: userId
                 },
-                callback_url: `${process.env.FRONTEND_URL}/payment/callback`
+                callback_url: `${process.env.FRONTEND_URL}/paystack/callback`
             },
             {
                 headers: {

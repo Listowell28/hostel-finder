@@ -125,7 +125,7 @@ function MyBookings() {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await fetch(`${API_URL}/api/payments/initialize`, {
+      const response = await fetch(`${API_URL}/api/paystack/initialize`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -895,7 +895,7 @@ app.post('/api/paystack/initialize', authenticate, async (req, res) => {
         userId: req.user.id,
         hostelName: booking.rows[0].hostel_name
       },
-      callback_url: `${process.env.FRONTEND_URL}/payment-callback`, // ✅ Use FRONTEND_URL
+      callback_url: `${process.env.FRONTEND_URL}/paystack-callback`, // ✅ Use FRONTEND_URL
     });
 
     res.json({
