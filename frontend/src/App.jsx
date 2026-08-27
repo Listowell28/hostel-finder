@@ -817,12 +817,49 @@ const HostelCard = ({ hostel }) => {
   if (isMobile) {
     return (
       <Box sx={{ minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa', pb: 8 }}>
-        {/* ✅ Modern Header */}
+        {/* ✅ Modern Header - Fully Rounded with Background Image */}
         <ModernHeader 
           user={user} 
           onMenuClick={() => setSidebarOpen(true)}
           darkMode={darkMode}
         />
+
+        {/* ✅ SEARCH BAR - SEPARATED FROM HEADER */}
+        <Box sx={{ px: { xs: 2, sm: 3 }, mt: 2 }}>
+          <Paper
+            sx={{
+              p: { xs: 0.8, sm: 1 },
+              borderRadius: '50px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              bgcolor: darkMode ? '#1e1e1e' : 'white',
+              border: '1px solid rgba(0,0,0,0.04)',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <TextField
+              fullWidth
+              placeholder="Search hostels, homestels..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              variant="standard"
+              InputProps={{
+                disableUnderline: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#8892b0', fontSize: '20px' }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  px: 1.5,
+                  py: 0.8,
+                  color: darkMode ? 'white' : '#1a1a2e',
+                  fontSize: '0.9rem'
+                }
+              }}
+            />
+          </Paper>
+        </Box>
 
         {/* Mobile Sidebar */}
         <MobileSidebar 
