@@ -34,7 +34,7 @@ import {
   useTheme,
   IconButton,
   CardMedia,
-  Rating
+  Rating,
   InputAdornment
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
