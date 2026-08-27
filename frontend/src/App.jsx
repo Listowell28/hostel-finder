@@ -35,6 +35,7 @@ import {
   IconButton,
   CardMedia,
   Rating
+  InputAdornment
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import HomeIcon from '@mui/icons-material/Home';
