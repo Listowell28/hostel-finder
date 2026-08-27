@@ -880,34 +880,16 @@ const HostelCard = ({ hostel }) => {
           onCategoryChange={setSelectedCategory}
         />
 
-        {/* ✅ HORIZONTAL SCROLL - POPULAR PROPERTIES */}
+        {/* ✅ HORIZONTAL SCROLL - POPULAR PROPERTIES (ALL HOSTELS) */}
         {!loading && filteredHostels.length > 0 && (
           <HorizontalHostelScroll
             hostels={filteredHostels.slice(0, 10)}
-            title="✨ Popular Properties"
+            title="Popular Properties"
             darkMode={darkMode}
           />
         )}
 
-        {/* ✅ HORIZONTAL SCROLL - HOSTELS */}
-        {!loading && filteredHostels.filter(h => h.category === 'hostel').length > 0 && (
-          <HorizontalHostelScroll
-            hostels={filteredHostels.filter(h => h.category === 'hostel').slice(0, 10)}
-            title="🏘️ Hostels"
-            darkMode={darkMode}
-          />
-        )}
-
-        {/* ✅ HORIZONTAL SCROLL - HOMESTELS */}
-        {!loading && filteredHostels.filter(h => h.category === 'homestel').length > 0 && (
-          <HorizontalHostelScroll
-            hostels={filteredHostels.filter(h => h.category === 'homestel').slice(0, 10)}
-            title="🏡 Homestels"
-            darkMode={darkMode}
-          />
-        )}
-
-        {/* ✅ REGULAR PROPERTY CARDS - Full Width (for when user wants to see all) */}
+        {/* ✅ REGULAR PROPERTY CARDS - Full Width */}
         <Box sx={{ px: 2, mt: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e', mb: 2, fontSize: '1rem' }}>
             All Properties
@@ -917,7 +899,7 @@ const HostelCard = ({ hostel }) => {
             <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>Loading hostels...</Typography>
           ) : filteredHostels.length === 0 ? (
             <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>
-              No {selectedCategory !== 'all' ? selectedCategory : ''} properties found
+              No properties found
             </Typography>
           ) : (
             <Grid container spacing={2}>
