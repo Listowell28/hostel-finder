@@ -57,17 +57,16 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
     <Box
       sx={{
         position: 'relative',
-        minHeight: { xs: '50vh', sm: '45vh', md: '40vh' },
+        minHeight: { xs: '30vh', sm: '28vh', md: '25vh' },
         display: 'flex',
         alignItems: 'center',
         background: darkMode
           ? 'linear-gradient(135deg, rgba(10,10,26,0.85) 0%, rgba(26,26,46,0.9) 100%)'
           : 'linear-gradient(135deg, rgba(15,12,41,0.8) 0%, rgba(48,43,99,0.85) 50%, rgba(36,36,62,0.9) 100%)',
         overflow: 'hidden',
-        // ✅ FULLY ROUNDED EDGES - ALL CORNERS
-        borderRadius: { xs: '24px', sm: '32px', md: '40px' },
+        borderRadius: { xs: '20px', sm: '28px', md: '32px' },
         mx: { xs: 1.5, sm: 2, md: 3 },
-        mt: { xs: 1, sm: 2, md: 2 },
+        mt: { xs: 1, sm: 1.5, md: 2 },
         mb: 0,
         '&::before': {
           content: '""',
@@ -80,10 +79,9 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          opacity: 0.3,
+          opacity: 0.25,
           zIndex: 0,
-          // ✅ ROUNDED CORNERS FOR BACKGROUND TOO
-          borderRadius: { xs: '24px', sm: '32px', md: '40px' }
+          borderRadius: { xs: '20px', sm: '28px', md: '32px' }
         },
         '&::after': {
           content: '""',
@@ -92,9 +90,9 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 100%)',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)',
           zIndex: 1,
-          borderRadius: { xs: '24px', sm: '32px', md: '40px' }
+          borderRadius: { xs: '20px', sm: '28px', md: '32px' }
         }
       }}
     >
@@ -103,25 +101,25 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           position: 'relative',
           zIndex: 2,
           width: '100%',
-          px: { xs: 3, sm: 4, md: 5 },
-          py: { xs: 3, sm: 4 }
+          px: { xs: 2.5, sm: 3, md: 4 },
+          py: { xs: 2, sm: 2.5 }
         }}
       >
-        {/* Top Bar */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={onMenuClick} sx={{ color: 'white' }}>
-              <MenuIcon />
+        {/* Top Bar - Compact */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <IconButton onClick={onMenuClick} sx={{ color: 'white', p: 0.5 }}>
+              <MenuIcon sx={{ fontSize: { xs: 22, sm: 26 } }} />
             </IconButton>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: { xs: '1.1rem', sm: '1.3rem' } }}>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.1rem' } }}>
               Hostel<span style={{ color: '#e94560' }}>Finder</span>
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {user ? (
               <Avatar
                 onClick={() => navigate('/profile')}
-                sx={{ bgcolor: '#e94560', cursor: 'pointer', width: 40, height: 40 }}
+                sx={{ bgcolor: '#e94560', cursor: 'pointer', width: { xs: 32, sm: 36 }, height: { xs: 32, sm: 36 } }}
               >
                 {user.full_name?.charAt(0) || 'U'}
               </Avatar>
@@ -132,8 +130,11 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
                 sx={{
                   bgcolor: '#e94560',
                   borderRadius: '50px',
-                  px: 3,
-                  py: 1,
+                  px: { xs: 2, sm: 2.5 },
+                  py: 0.5,
+                  fontSize: { xs: '10px', sm: '12px' },
+                  textTransform: 'none',
+                  fontWeight: 600,
                   '&:hover': { bgcolor: '#c73652' }
                 }}
               >
@@ -143,69 +144,66 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           </Box>
         </Box>
 
-        {/* Hero Content */}
-        <Box sx={{ maxWidth: '800px', mx: 'auto', textAlign: 'center' }}>
-          {/* Small Tag */}
+        {/* ✅ Hero Content - Small & Cute */}
+        <Box sx={{ maxWidth: '700px', mx: 'auto', textAlign: 'center' }}>
+          {/* Small Tag - Cute */}
           <Typography
             sx={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: { xs: '0.6rem', sm: '0.7rem' },
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: { xs: '0.55rem', sm: '0.65rem' },
               fontWeight: 500,
-              letterSpacing: '3px',
+              letterSpacing: '2px',
               textTransform: 'uppercase',
-              mb: 1.5
+              mb: 0.8
             }}
           >
-            Premium Properties • Trusted Service
+            ✦ Premium Properties • Trusted Service ✦
           </Typography>
 
-          {/* Main Heading */}
+          {/* Main Heading - Compact */}
           <Typography
-            variant="h1"
             sx={{
-              fontSize: { xs: '1.8rem', sm: '3rem', md: '3.8rem' },
+              fontSize: { xs: '1.5rem', sm: '2.2rem', md: '2.8rem' },
               fontWeight: 800,
               color: 'white',
-              mb: 1.5,
+              mb: 0.5,
               lineHeight: 1.1,
               textShadow: '0 4px 30px rgba(0,0,0,0.3)'
             }}
           >
-            FIND YOUR <br />
-            <span style={{ color: '#e94560' }}>DREAM HOSTEL</span>
+            FIND YOUR <span style={{ color: '#e94560' }}>DREAM SPACE</span>
           </Typography>
 
-          {/* Subtitle */}
+          {/* Subtitle - Small */}
           <Typography
-            variant="h6"
             sx={{
-              color: 'rgba(255,255,255,0.6)',
-              mb: { xs: 2, sm: 3 },
-              fontSize: { xs: '0.8rem', sm: '1rem' },
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: { xs: '0.7rem', sm: '0.85rem' },
               fontWeight: 300,
-              maxWidth: '600px',
-              mx: 'auto'
+              maxWidth: '500px',
+              mx: 'auto',
+              mb: 1
             }}
           >
-            Discover the best hostels and homestels in Kumasi, Ghana.
+            Discover the best hostels and homestels in Kumasi
           </Typography>
 
-          {/* Location Badge */}
+          {/* Location Badge - Cute */}
           <Box
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 1,
-              px: 2,
-              py: 0.6,
+              gap: 0.8,
+              px: 1.5,
+              py: 0.5,
               borderRadius: '50px',
-              background: 'rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.05)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255,255,255,0.04)'
             }}
           >
-            <LocationIcon sx={{ color: '#e94560', fontSize: '16px' }} />
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>
+            <LocationIcon sx={{ color: '#e94560', fontSize: { xs: 14, sm: 16 } }} />
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)', fontSize: { xs: '0.6rem', sm: '0.7rem' } }}>
               {isLocating ? 'Detecting...' : location}
             </Typography>
             <IconButton
@@ -213,7 +211,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
               onClick={detectLocation}
               sx={{ color: 'rgba(255,255,255,0.3)', p: 0.2 }}
             >
-              <MyLocationIcon sx={{ fontSize: 12 }} />
+              <MyLocationIcon sx={{ fontSize: { xs: 10, sm: 12 } }} />
             </IconButton>
           </Box>
         </Box>
