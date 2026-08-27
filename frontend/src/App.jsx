@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import ModernHeader from './components/ModernHeader';
 import MobileSidebar from './components/MobileSidebar';
 import CategoryFilter from './components/CategoryFilter';
+import HorizontalHostelScroll from './components/HorizontalHostelScroll';
 import {
   Typography,
   Button,
@@ -879,11 +880,37 @@ const HostelCard = ({ hostel }) => {
           onCategoryChange={setSelectedCategory}
         />
 
-        {/* Property Cards */}
+        {/* ✅ HORIZONTAL SCROLL - POPULAR PROPERTIES */}
+        {!loading && filteredHostels.length > 0 && (
+          <HorizontalHostelScroll
+            hostels={filteredHostels.slice(0, 10)}
+            title="✨ Popular Properties"
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* ✅ HORIZONTAL SCROLL - HOSTELS */}
+        {!loading && filteredHostels.filter(h => h.category === 'hostel').length > 0 && (
+          <HorizontalHostelScroll
+            hostels={filteredHostels.filter(h => h.category === 'hostel').slice(0, 10)}
+            title="🏘️ Hostels"
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* ✅ HORIZONTAL SCROLL - HOMESTELS */}
+        {!loading && filteredHostels.filter(h => h.category === 'homestel').length > 0 && (
+          <HorizontalHostelScroll
+            hostels={filteredHostels.filter(h => h.category === 'homestel').slice(0, 10)}
+            title="🏡 Homestels"
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* ✅ REGULAR PROPERTY CARDS - Full Width (for when user wants to see all) */}
         <Box sx={{ px: 2, mt: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e', mb: 2, fontSize: '1rem' }}>
-            {selectedCategory === 'all' ? 'Popular Properties' : 
-             selectedCategory === 'hostel' ? '🏘️ Hostels' : '🏡 Homestels'}
+            All Properties
           </Typography>
           
           {loading ? (
