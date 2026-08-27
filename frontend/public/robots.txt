@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /my-bookings/
+Disallow: /my-properties/
+
+Sitemap: https://hostel-finder-xi.vercel.app/sitemap.xml
