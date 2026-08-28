@@ -8,6 +8,7 @@ import MobileSidebar from './components/MobileSidebar';
 import CategoryFilter from './components/CategoryFilter';
 import HorizontalHostelScroll from './components/HorizontalHostelScroll';
 import AdBanner from './components/AdBanner';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import {
   Typography,
   Button,
@@ -818,7 +819,7 @@ const HostelCard = ({ hostel }) => {
   // ============================================
   // RENDER - MOBILE VIEW
   // ============================================
-  if (isMobile) {
+ if (isMobile) {
     return (
       <Box sx={{ minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa', pb: 8 }}>
         {/* ✅ Modern Header - Fully Rounded with Background Image */}
@@ -865,7 +866,7 @@ const HostelCard = ({ hostel }) => {
           </Paper>
         </Box>
 
-        {/* Mobile Sidebar */}
+        {/* Mobile Sidebar - UPDATED with Ad Management */}
         <MobileSidebar 
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -882,7 +883,7 @@ const HostelCard = ({ hostel }) => {
           onCategoryChange={setSelectedCategory}
         />
 
-        {/* ✅ AD BANNER - ADDED HERE (After Category Filter) */}
+        {/* ✅ AD BANNER */}
         <Box sx={{ px: 2, mt: 1 }}>
           <AdBanner position="homepage" darkMode={darkMode} />
         </Box>
@@ -949,7 +950,7 @@ const HostelCard = ({ hostel }) => {
           </BottomNavigation>
         </Paper>
 
-        {/* ✅ BOOKING DIALOG - MOBILE (Booking First, Then Payment) */}
+        {/* ✅ BOOKING DIALOG - MOBILE */}
         <Dialog
           open={!!bookingDialog}
           onClose={() => {
@@ -1137,10 +1138,19 @@ const HostelCard = ({ hostel }) => {
             <ListItemIcon><ReviewsIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
             <ListItemText primary="Reviews" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
           </ListItem>
+          
+          {/* ✅ AD MANAGEMENT - ADDED FOR ADMIN */}
+          {user?.role === 'admin' && (
+            <ListItem button component={Link} to="/admin/ads" sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}>
+              <ListItemIcon><TrendingUpIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+              <ListItemText primary="Ad Management" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+            </ListItem>
+          )}
+          
           {user?.role === 'admin' && (
             <ListItem button component={Link} to="/admin" sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}>
               <ListItemIcon><DashboardIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
-              <ListItemText primary="Admin" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+              <ListItemText primary="Admin Dashboard" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
             </ListItem>
           )}
         </List>
@@ -1272,7 +1282,7 @@ const HostelCard = ({ hostel }) => {
           onCategoryChange={setSelectedCategory}
         />
 
-        {/* ✅ AD BANNER - DESKTOP (ADDED HERE) */}
+        {/* ✅ AD BANNER - DESKTOP */}
         <Box sx={{ px: 2, mt: 2, maxWidth: '1200px', mx: 'auto' }}>
           <AdBanner position="homepage" darkMode={darkMode} />
         </Box>

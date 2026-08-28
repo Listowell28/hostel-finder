@@ -18,7 +18,8 @@ import {
   WhatsApp as WhatsAppIcon,
   Phone as PhoneIcon,
   Brightness4 as Brightness4Icon,
-  Brightness7 as Brightness7Icon
+  Brightness7 as Brightness7Icon,
+  TrendingUp as TrendingUpIcon  // ← ADD THIS
 } from '@mui/icons-material';
 import LanguageSwitcher from '../languageswitcher';
 
@@ -105,14 +106,25 @@ function MobileSidebar({
         )}
 
         {user?.role === 'admin' && (
-          <ListItem 
-            button 
-            onClick={() => { navigate('/admin'); onClose(); }} 
-            sx={{ borderRadius: 2, mb: 0.5 }}
-          >
-            <ListItemIcon><DashboardIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
-            <ListItemText primary="Admin Dashboard" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
-          </ListItem>
+          <>
+            <ListItem 
+              button 
+              onClick={() => { navigate('/admin'); onClose(); }} 
+              sx={{ borderRadius: 2, mb: 0.5 }}
+            >
+              <ListItemIcon><DashboardIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+              <ListItemText primary="Admin Dashboard" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+            </ListItem>
+            {/* ✅ AD MANAGEMENT - ADDED HERE */}
+            <ListItem 
+              button 
+              onClick={() => { navigate('/admin/ads'); onClose(); }} 
+              sx={{ borderRadius: 2, mb: 0.5 }}
+            >
+              <ListItemIcon><TrendingUpIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+              <ListItemText primary="Ad Management" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+            </ListItem>
+          </>
         )}
 
         <Divider sx={{ bgcolor: 'rgba(255,255,255,0.1)', my: 1 }} />
