@@ -77,7 +77,19 @@ function AdManagement() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setAds(data);
+      
+      // ✅ Process ads to ensure full URLs for images
+      const processedAds = data.map(ad => ({
+        ...ad,
+        image: ad.image && !ad.image.startsWith('http') 
+          ? `${API_URL}${ad.image}` 
+          : ad.image,
+        video_url: ad.video_url && !ad.video_url.startsWith('http')
+          ? `${API_URL}${ad.video_url}`
+          : ad.video_url
+      }));
+      
+      setAds(processedAds);
       setLoading(false);
     } catch (err) {
       setError('Failed to fetch ads');
@@ -105,6 +117,12 @@ function AdManagement() {
       return;
     }
 
+    // ✅ Check if token exists
+    if (!token) {
+      setError('Please login first');
+      return;
+    }
+
     setUploading(true);
     setError('');
 
@@ -123,16 +141,34 @@ function AdManagement() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-      // Set the URL based on file type
+      console.log('✅ Upload response:', data);
+
+      // ✅ Build full URL for preview
+      const fileUrl = data.url.startsWith('http') 
+        ? data.url 
+        : `${API_URL}${data.url}`;
+
+      // ✅ Set the URL based on file type
       if (isImage) {
-        setForm({ ...form, image: data.url, type: 'image' });
-        setPreviewUrl(data.url);
+        setForm({ 
+          ...form, 
+          image: fileUrl,  // ✅ Store full URL
+          type: 'image',
+          video_url: ''    // ✅ Clear video URL
+        });
+        setPreviewUrl(fileUrl);
       } else if (isVideo) {
-        setForm({ ...form, video_url: data.url, type: 'video' });
-        setPreviewUrl(data.url);
+        setForm({ 
+          ...form, 
+          video_url: fileUrl,  // ✅ Store full URL
+          type: 'video',
+          image: ''            // ✅ Clear image URL
+        });
+        setPreviewUrl(fileUrl);
       }
 
       setSuccess('✅ File uploaded successfully!');
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -149,16 +185,32 @@ function AdManagement() {
       
       const method = editingAd ? 'PUT' : 'POST';
 
+      // ✅ Prepare ad data
+      const adData = {
+        title: form.title,
+        description: form.description,
+        image: form.image || null,
+        video_url: form.video_url || null,
+        link: form.link || null,
+        position: form.position,
+        price: parseFloat(form.price) || 0,
+        active: form.active,
+        type: form.type || 'image'
+      };
+
+      console.log('📤 Sending ad data:', adData);
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(adData)
       });
 
-      if (!res.ok) throw new Error('Failed to save ad');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save ad');
 
       setSuccess(editingAd ? 'Ad updated!' : 'Ad created!');
       setDialogOpen(false);
@@ -204,7 +256,11 @@ function AdManagement() {
 
   const handleEdit = (ad) => {
     setEditingAd(ad);
-    setForm(ad);
+    setForm({
+      ...ad,
+      image: ad.image || '',
+      video_url: ad.video_url || ''
+    });
     setPreviewUrl(ad.image || ad.video_url || '');
     setDialogOpen(true);
   };
@@ -298,7 +354,14 @@ function AdManagement() {
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       {ad.image && ad.type !== 'video' ? (
-                        <img src={ad.image} alt={ad.title} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }} />
+                        <img 
+                          src={ad.image} 
+                          alt={ad.title} 
+                          style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }}
+                          onError={(e) => {
+                            e.target.src = 'https://placehold.co/50x50/e94560/white?text=Error';
+                          }}
+                        />
                       ) : ad.video_url ? (
                         <Box sx={{ width: 50, height: 50, bgcolor: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <VideoIcon sx={{ color: 'white' }} />
@@ -401,13 +464,25 @@ function AdManagement() {
                 Supports JPG, PNG, GIF, WebP, MP4 (Max 10MB)
               </Typography>
               
-              {/* Preview */}
+              {/* ✅ Preview - Fixed */}
               {previewUrl && (
                 <Box sx={{ mt: 2 }}>
                   {form.type === 'video' ? (
-                    <video src={previewUrl} controls style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }} />
+                    <video 
+                      src={previewUrl} 
+                      controls 
+                      style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }} 
+                    />
                   ) : (
-                    <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }} />
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
+                      onError={(e) => {
+                        console.error('❌ Image preview error:', e);
+                        e.target.src = 'https://placehold.co/400x200/e94560/white?text=Error+Loading';
+                      }}
+                    />
                   )}
                   <Button 
                     size="small" 
