@@ -8,7 +8,9 @@ const passport = require('./auth');
 const http = require('http');
 const socketIo = require('socket.io');
 require('dotenv').config();
-const path = require('path')
+const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 // SMS Imports
 const { 
@@ -19,7 +21,6 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
 
 // Create HTTP server and Socket.io
 const server = http.createServer(app);
@@ -42,16 +43,28 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-// ✅ MUST HAVE THIS
+
 const bookingRoutes = require('./src/routes/bookingRoutes');
 app.use('/api/bookings', bookingRoutes);
 
-app.use('/uploads', express.static(path.join(__dirname,'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const reviewRoutes = require('./src/routes/reviewRoutes');
+app.use('/api/reviews', reviewRoutes);
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'session_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+const JWT_SECRET = process.env.JWT_SECRET || 'hostel_finder_super_secret_key_2026';
 
 // ============ AD UPLOAD CONFIG ============
-const multer = require('multer');
-const fs = require('fs');
-
 const adUploadDir = path.join(__dirname, 'uploads', 'ads');
 if (!fs.existsSync(adUploadDir)) {
   fs.mkdirSync(adUploadDir, { recursive: true });
@@ -79,32 +92,8 @@ const adFileFilter = (req, file, cb) => {
 const adUpload = multer({
   storage: adStorage,
   fileFilter: adFileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
-
-// ✅ Then the route AFTER the config
-app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, res) => {
-  // ... upload logic
-});
-
-// ✅ REGISTER REVIEW ROUTES
-// ============================================
-const reviewRoutes = require('./src/routes/reviewRoutes');
-app.use('/api/reviews', reviewRoutes);
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'session_secret_key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false }
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-
-
-const JWT_SECRET = process.env.JWT_SECRET || 'hostel_finder_super_secret_key_2026';
 
 // ============ TOKEN GENERATION ============
 const generateToken = (user) => {
@@ -123,12 +112,12 @@ async function registerUser(email, password, full_name, phone, role = 'student')
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-const result = await pool.query(
-  `INSERT INTO users (email, password_hash, full_name, phone, role)
-   VALUES ($1, $2, $3, $4, $5)
-   RETURNING id, email, full_name, phone, role, created_at`,
-  [email, hashedPassword, full_name, phone, role]
-);
+  const result = await pool.query(
+    `INSERT INTO users (email, password_hash, full_name, phone, role)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, email, full_name, phone, role, created_at`,
+    [email, hashedPassword, full_name, phone, role]
+  );
 
   return result.rows[0];
 }
@@ -195,15 +184,15 @@ async function authenticate(req, res, next) {
 // ============ API ROUTES ============
 
 // Health Check
-// ✅ Health check endpoint
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        message: 'Backend is running!',
-        timestamp: new Date().toISOString()
-    });
+  res.json({ 
+    status: 'OK', 
+    message: 'Backend is running!',
+    timestamp: new Date().toISOString()
+  });
 });
 
+// Google Callback
 app.get('/api/auth/google/callback',
   passport.authenticate('google', { 
     failureRedirect: '/login',
@@ -213,11 +202,8 @@ app.get('/api/auth/google/callback',
     try {
       const user = req.user;
       const token = generateToken(user);
-      
-      // ✅ Uses FRONTEND_URL from Render
       const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
       res.redirect(`${frontendURL}/social-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
-      
     } catch (err) {
       console.error('Google callback error:', err);
       res.redirect('/login');
@@ -225,8 +211,9 @@ app.get('/api/auth/google/callback',
   }
 );
 
+// GitHub Callback
 app.get('/api/auth/github/callback',
-  passport.authenticate('gighub', { 
+  passport.authenticate('github', { 
     failureRedirect: '/login',
     session: false
   }),
@@ -234,13 +221,10 @@ app.get('/api/auth/github/callback',
     try {
       const user = req.user;
       const token = generateToken(user);
-      
-      // ✅ Uses FRONTEND_URL from Render
       const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
       res.redirect(`${frontendURL}/social-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
-      
     } catch (err) {
-      console.error('Github callback error:', err);
+      console.error('GitHub callback error:', err);
       res.redirect('/login');
     }
   }
@@ -248,13 +232,13 @@ app.get('/api/auth/github/callback',
 
 // ============ AUTH ROUTES ============
 
-// REGISTER
+// Register
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, full_name, phone, role } = req.body;
   
   if (!email || !password || !full_name || !phone) {
-  return res.status(400).json({ error: 'Email, password, full name, and phone are required' });
-}
+    return res.status(400).json({ error: 'Email, password, full name, and phone are required' });
+  }
   
   if (password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
@@ -268,7 +252,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// LOGIN
+// Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -284,7 +268,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// GET CURRENT USER
+// Get current user
 app.get('/api/auth/me', authenticate, async (req, res) => {
   res.json(req.user);
 });
@@ -366,8 +350,7 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
-// Create hostel - WITH CATEGORY
-// Create hostel - WITH CATEGORY
+// Create hostel
 app.post('/api/hostels', authenticate, async (req, res) => {
   const { 
     name, address, city, state, zip_code, description, 
@@ -388,18 +371,9 @@ app.post('/api/hostels', authenticate, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        name, 
-        address, 
-        city, 
-        state, 
-        zip_code, 
-        description, 
-        parseFloat(price_per_year), 
-        amenities || [], 
-        req.user.id,
-        images || [], 
-        available !== false, 
-        category || 'hostel'
+        name, address, city, state, zip_code, description, 
+        parseFloat(price_per_year), amenities || [], req.user.id,
+        images || [], available !== false, category || 'hostel'
       ]
     );
     
@@ -411,7 +385,7 @@ app.post('/api/hostels', authenticate, async (req, res) => {
   }
 });
 
-// Update hostel - WITH CATEGORY
+// Update hostel
 app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
@@ -472,7 +446,6 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
       fields.push(`available = $${paramCount++}`);
       values.push(updates.available === true || updates.available === 'true');
     }
-    // ✅ ADD CATEGORY
     if (updates.category !== undefined) {
       fields.push(`category = $${paramCount++}`);
       values.push(updates.category || 'hostel');
@@ -526,6 +499,7 @@ app.delete('/api/hostels/:id', authenticate, async (req, res) => {
 });
 
 // ============ USER ROUTES ============
+
 app.get('/api/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, email, full_name, role, phone, created_at FROM users');
@@ -535,8 +509,6 @@ app.get('/api/users', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
-
-// ============ USER PROFILE ROUTES ============
 
 // Get user profile
 app.get('/api/users/profile', authenticate, async (req, res) => {
@@ -589,8 +561,9 @@ app.put('/api/users/profile', authenticate, async (req, res) => {
   }
 });
 
+// ============ BOOKING ROUTES ============
 
-// GET USER'S BOOKINGS
+// Get user's bookings
 app.get('/api/my-bookings', authenticate, async (req, res) => {
   try {
     console.log('📊 Fetching bookings for user:', req.user.id);
@@ -616,8 +589,7 @@ app.get('/api/my-bookings', authenticate, async (req, res) => {
   }
 });
 
-
-// GET BOOKING DETAILS
+// Get booking details
 app.get('/api/bookings/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
@@ -645,8 +617,7 @@ app.get('/api/bookings/:id', authenticate, async (req, res) => {
   }
 });
 
-
-// CANCEL BOOKING
+// Cancel booking
 app.put('/api/bookings/:id/cancel', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
@@ -849,8 +820,6 @@ app.delete('/api/reviews/:id', authenticate, async (req, res) => {
   }
 });
 
-
-
 // ============ IMAGE UPLOAD ROUTE ============
 const { upload, uploadMultiple, uploadToSupabase } = require('./upload');
 
@@ -886,7 +855,6 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
         return res.status(500).json({ error: 'No images could be uploaded' });
       }
 
-      // ✅ FIXED: Return format that frontend expects
       const imageUrls = uploadedImages.map(img => img.url);
       
       console.log(`✅ Successfully uploaded ${imageUrls.length} images`);
@@ -895,9 +863,8 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
         success: true,
         message: `${imageUrls.length} images uploaded successfully`,
         images: uploadedImages,
-        imageUrls: imageUrls  // ← Frontend expects this
+        imageUrls: imageUrls
       });
-
     });
   } catch (err) {
     console.error('❌ Upload error:', err);
@@ -905,16 +872,41 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
   }
 });
 
+// ============ AD UPLOAD ROUTE ============
+app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/ads/${req.file.filename}`;
+    const isVideo = req.file.mimetype.startsWith('video/');
+
+    res.json({
+      success: true,
+      url: fileUrl,
+      type: isVideo ? 'video' : 'image',
+      filename: req.file.filename
+    });
+
+  } catch (err) {
+    console.error('❌ Ad upload error:', err);
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
 // ============ PAYSTACK PAYMENT ROUTES ============
 
 const Paystack = require('paystack')(process.env.PAYSTACK_SECRET_KEY);
 
-// ✅ Initialize payment
 app.post('/api/paystack/initialize', authenticate, async (req, res) => {
   const { bookingId, amount, email } = req.body;
 
   try {
-    // Get booking details
     const booking = await pool.query(
       `SELECT bookings.*, hostels.name as hostel_name 
        FROM bookings 
@@ -927,16 +919,15 @@ app.post('/api/paystack/initialize', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    // ✅ Initialize Paystack transaction
     const response = await Paystack.transaction.initialize({
-      amount: Math.round(parseFloat(amount) * 100), // Paystack uses kobo (GHS * 100)
+      amount: Math.round(parseFloat(amount) * 100),
       email: email || req.user.email,
       metadata: {
         bookingId: bookingId,
         userId: req.user.id,
         hostelName: booking.rows[0].hostel_name
       },
-      callback_url: `${process.env.FRONTEND_URL}/paystack-callback`, // ✅ Use FRONTEND_URL
+      callback_url: `${process.env.FRONTEND_URL}/paystack-callback`,
     });
 
     res.json({
@@ -950,7 +941,6 @@ app.post('/api/paystack/initialize', authenticate, async (req, res) => {
   }
 });
 
-// ✅ Verify payment
 app.get('/api/paystack/verify/:reference', authenticate, async (req, res) => {
   const { reference } = req.params;
 
@@ -961,7 +951,6 @@ app.get('/api/paystack/verify/:reference', authenticate, async (req, res) => {
       const bookingId = response.data.metadata?.bookingId;
 
       if (bookingId) {
-        // ✅ Update booking status
         await pool.query(
           'UPDATE bookings SET status = $1, payment_status = $2 WHERE id = $3',
           ['confirmed', 'paid', bookingId]
@@ -986,7 +975,6 @@ app.get('/api/paystack/verify/:reference', authenticate, async (req, res) => {
 
 // ============ ADMIN ROUTES ============
 
-// Get dashboard stats
 app.get('/api/admin/stats', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1021,7 +1009,6 @@ app.get('/api/admin/stats', authenticate, async (req, res) => {
   }
 });
 
-// Get all users (admin only)
 app.get('/api/admin/users', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1040,7 +1027,6 @@ app.get('/api/admin/users', authenticate, async (req, res) => {
   }
 });
 
-// Update user role (admin only)
 app.put('/api/admin/users/:id/role', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1069,7 +1055,6 @@ app.put('/api/admin/users/:id/role', authenticate, async (req, res) => {
   }
 });
 
-// Delete user (admin only)
 app.delete('/api/admin/users/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1089,7 +1074,6 @@ app.delete('/api/admin/users/:id', authenticate, async (req, res) => {
   }
 });
 
-// Get all hostels (admin only)
 app.get('/api/admin/hostels', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1109,7 +1093,6 @@ app.get('/api/admin/hostels', authenticate, async (req, res) => {
   }
 });
 
-// Delete hostel (admin only)
 app.delete('/api/admin/hostels/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1129,291 +1112,8 @@ app.delete('/api/admin/hostels/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============ AD ROUTES ============
-
-// Get ads by position
-app.get('/api/ads', async (req, res) => {
-  try {
-    const { position } = req.query;
-    let query = 'SELECT * FROM ads WHERE active = true';
-    if (position) {
-      query += ` AND position = '${position}'`;
-    }
-    query += ' ORDER BY created_at DESC';
-    
-    const result = await pool.query(query);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching ads:', err);
-    res.status(500).json({ error: 'Failed to fetch ads' });
-  }
-});
-
-// Create ad (admin only)
-app.post('/api/ads', authenticate, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-
-  const { title, description, image, link, position, price, active } = req.body;
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO ads (title, description, image, link, position, price, active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [title, description, image, link, position, parseFloat(price), active !== false]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating ad:', err);
-    res.status(500).json({ error: 'Failed to create ad' });
-  }
-});
-
-// Update ad (admin only)
-app.put('/api/ads/:id', authenticate, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-
-  const { id } = req.params;
-  const { title, description, image, link, position, price, active } = req.body;
-
-  try {
-    const result = await pool.query(
-      `UPDATE ads 
-       SET title = $1, description = $2, image = $3, link = $4, 
-           position = $5, price = $6, active = $7
-       WHERE id = $8
-       RETURNING *`,
-      [title, description, image, link, position, parseFloat(price), active !== false, id]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error updating ad:', err);
-    res.status(500).json({ error: 'Failed to update ad' });
-  }
-});
-
-// Delete ad (admin only)
-app.delete('/api/ads/:id', authenticate, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-
-  const { id } = req.params;
-
-  try {
-    await pool.query('DELETE FROM ads WHERE id = $1', [id]);
-    res.json({ message: 'Ad deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting ad:', err);
-    res.status(500).json({ error: 'Failed to delete ad' });
-  }
-});
-
-// Track ad click
-app.post('/api/ads/:id/click', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await pool.query(
-      'UPDATE ads SET clicks = clicks + 1 WHERE id = $1',
-      [id]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Error tracking click:', err);
-    res.status(500).json({ error: 'Failed to track click' });
-  }
-});
-
-// ============ PREMIUM ROUTES ============
-
-// Toggle premium status (admin only)
-app.post('/api/premium/upgrade', authenticate, async (req, res) => {
-  const { hostelId, tier } = req.body;
-
-  console.log('📤 Premium upgrade request:', { hostelId, tier });
-
-  if (!hostelId || !tier) {
-    return res.status(400).json({ error: 'Hostel ID and tier are required' });
-  }
-
-  if (!['premium', 'vip', 'free'].includes(tier)) {
-    return res.status(400).json({ error: 'Invalid tier. Use premium, vip, or free' });
-  }
-
-  try {
-    // Check if hostel exists
-    const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [hostelId]);
-    if (check.rows.length === 0) {
-      return res.status(404).json({ error: 'Hostel not found' });
-    }
-
-    // Check authorization (admin or owner)
-    if (check.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
-    // If tier is 'free', remove premium
-    if (tier === 'free') {
-      const result = await pool.query(
-        `UPDATE hostels 
-         SET is_premium = false, premium_tier = 'free', premium_expiry = NULL
-         WHERE id = $1
-         RETURNING *`,
-        [hostelId]
-      );
-      return res.json({
-        message: 'Premium removed successfully',
-        hostel: result.rows[0]
-      });
-    }
-
-    // Set expiry date (30 days from now)
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-
-    // Update hostel to premium
-    const result = await pool.query(
-      `UPDATE hostels 
-       SET is_premium = true, premium_tier = $1, premium_expiry = $2
-       WHERE id = $3
-       RETURNING *`,
-      [tier, expiryDate, hostelId]
-    );
-
-    // Create subscription record
-    const price = tier === 'vip' ? 250 : 100;
-    await pool.query(
-      `INSERT INTO premium_subscriptions (hostel_id, tier, price, end_date)
-       VALUES ($1, $2, $3, $4)`,
-      [hostelId, tier, price, expiryDate]
-    );
-
-    console.log('✅ Hostel upgraded to:', tier);
-    res.json({
-      message: `Hostel upgraded to ${tier.toUpperCase()} successfully!`,
-      hostel: result.rows[0]
-    });
-
-  } catch (err) {
-    console.error('❌ Premium upgrade error:', err);
-    res.status(500).json({ error: 'Failed to upgrade hostel: ' + err.message });
-  }
-});
-
-// Get premium stats
-app.get('/api/premium/stats', authenticate, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-
-  try {
-    const premiumCount = await pool.query(
-      'SELECT COUNT(*) FROM hostels WHERE is_premium = true'
-    );
-    const vipCount = await pool.query(
-      'SELECT COUNT(*) FROM hostels WHERE premium_tier = $1',
-      ['vip']
-    );
-    const revenue = await pool.query(
-      'SELECT COALESCE(SUM(price), 0) FROM premium_subscriptions WHERE status = $1',
-      ['active']
-    );
-
-    res.json({
-      premiumCount: parseInt(premiumCount.rows[0].count),
-      vipCount: parseInt(vipCount.rows[0].count),
-      revenue: parseFloat(revenue.rows[0].sum) || 0
-    });
-  } catch (err) {
-    console.error('Error fetching premium stats:', err);
-    res.status(500).json({ error: 'Failed to fetch stats' });
-  }
-});
-
-// Get all premium hostels
-app.get('/api/premium/hostels', authenticate, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT * FROM hostels WHERE is_premium = true ORDER BY premium_tier DESC`
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching premium hostels:', err);
-    res.status(500).json({ error: 'Failed to fetch premium hostels' });
-  }
-});
-
-// ============ AD FILE UPLOAD ROUTE ============
-const adpath = require('path');
-const adfs = require('fs');
-
-// Ensure ad-uploads directory exists
-const addUploadDir = path.join(__dirname, 'uploads', 'ads');
-if (!fs.existsSync(adUploadDir)) {
-  fs.mkdirSync(adUploadDir, { recursive: true });
-}
-
-// Configure multer for ad uploads
-const adStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, adUploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const adFileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only images and MP4 videos allowed.'), false);
-  }
-};
-
-const adUpload = multer({
-  storage: adStorage,
-  fileFilter: adFileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
-});
-
-// Upload ad file
-app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    const fileUrl = `/uploads/ads/${req.file.filename}`;
-    const isVideo = req.file.mimetype.startsWith('video/');
-
-    res.json({
-      success: true,
-      url: fileUrl,
-      type: isVideo ? 'video' : 'image',
-      filename: req.file.filename
-    });
-
-  } catch (err) {
-    console.error('❌ Ad upload error:', err);
-    res.status(500).json({ error: 'Failed to upload file' });
-  }
-});
-
 // ============ ADMIN BOOKING MANAGEMENT ============
 
-// Get all bookings (admin only)
 app.get('/api/admin/bookings', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1438,7 +1138,6 @@ app.get('/api/admin/bookings', authenticate, async (req, res) => {
   }
 });
 
-// Update booking status (admin only) - WITH SMS
 app.put('/api/admin/bookings/:id/status', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1523,9 +1222,213 @@ app.put('/api/admin/bookings/:id/status', authenticate, async (req, res) => {
   }
 });
 
+// ============ AD ROUTES ============
+
+app.get('/api/ads', async (req, res) => {
+  try {
+    const { position } = req.query;
+    let query = 'SELECT * FROM ads WHERE active = true';
+    if (position) {
+      query += ` AND position = '${position}'`;
+    }
+    query += ' ORDER BY created_at DESC';
+    
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching ads:', err);
+    res.status(500).json({ error: 'Failed to fetch ads' });
+  }
+});
+
+app.post('/api/ads', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { title, description, image, link, position, price, active } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO ads (title, description, image, link, position, price, active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [title, description, image, link, position, parseFloat(price), active !== false]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating ad:', err);
+    res.status(500).json({ error: 'Failed to create ad' });
+  }
+});
+
+app.put('/api/ads/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { id } = req.params;
+  const { title, description, image, link, position, price, active } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE ads 
+       SET title = $1, description = $2, image = $3, link = $4, 
+           position = $5, price = $6, active = $7
+       WHERE id = $8
+       RETURNING *`,
+      [title, description, image, link, position, parseFloat(price), active !== false, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating ad:', err);
+    res.status(500).json({ error: 'Failed to update ad' });
+  }
+});
+
+app.delete('/api/ads/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { id } = req.params;
+
+  try {
+    await pool.query('DELETE FROM ads WHERE id = $1', [id]);
+    res.json({ message: 'Ad deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting ad:', err);
+    res.status(500).json({ error: 'Failed to delete ad' });
+  }
+});
+
+app.post('/api/ads/:id/click', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query(
+      'UPDATE ads SET clicks = clicks + 1 WHERE id = $1',
+      [id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error tracking click:', err);
+    res.status(500).json({ error: 'Failed to track click' });
+  }
+});
+
+// ============ PREMIUM ROUTES ============
+
+app.post('/api/premium/upgrade', authenticate, async (req, res) => {
+  const { hostelId, tier } = req.body;
+
+  console.log('📤 Premium upgrade request:', { hostelId, tier });
+
+  if (!hostelId || !tier) {
+    return res.status(400).json({ error: 'Hostel ID and tier are required' });
+  }
+
+  if (!['premium', 'vip', 'free'].includes(tier)) {
+    return res.status(400).json({ error: 'Invalid tier. Use premium, vip, or free' });
+  }
+
+  try {
+    const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [hostelId]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found' });
+    }
+
+    if (check.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    if (tier === 'free') {
+      const result = await pool.query(
+        `UPDATE hostels 
+         SET is_premium = false, premium_tier = 'free', premium_expiry = NULL
+         WHERE id = $1
+         RETURNING *`,
+        [hostelId]
+      );
+      return res.json({
+        message: 'Premium removed successfully',
+        hostel: result.rows[0]
+      });
+    }
+
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    const result = await pool.query(
+      `UPDATE hostels 
+       SET is_premium = true, premium_tier = $1, premium_expiry = $2
+       WHERE id = $3
+       RETURNING *`,
+      [tier, expiryDate, hostelId]
+    );
+
+    const price = tier === 'vip' ? 250 : 100;
+    await pool.query(
+      `INSERT INTO premium_subscriptions (hostel_id, tier, price, end_date)
+       VALUES ($1, $2, $3, $4)`,
+      [hostelId, tier, price, expiryDate]
+    );
+
+    console.log('✅ Hostel upgraded to:', tier);
+    res.json({
+      message: `Hostel upgraded to ${tier.toUpperCase()} successfully!`,
+      hostel: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error('❌ Premium upgrade error:', err);
+    res.status(500).json({ error: 'Failed to upgrade hostel: ' + err.message });
+  }
+});
+
+app.get('/api/premium/stats', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const premiumCount = await pool.query(
+      'SELECT COUNT(*) FROM hostels WHERE is_premium = true'
+    );
+    const vipCount = await pool.query(
+      'SELECT COUNT(*) FROM hostels WHERE premium_tier = $1',
+      ['vip']
+    );
+    const revenue = await pool.query(
+      'SELECT COALESCE(SUM(price), 0) FROM premium_subscriptions WHERE status = $1',
+      ['active']
+    );
+
+    res.json({
+      premiumCount: parseInt(premiumCount.rows[0].count),
+      vipCount: parseInt(vipCount.rows[0].count),
+      revenue: parseFloat(revenue.rows[0].sum) || 0
+    });
+  } catch (err) {
+    console.error('Error fetching premium stats:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+app.get('/api/premium/hostels', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM hostels WHERE is_premium = true ORDER BY premium_tier DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching premium hostels:', err);
+    res.status(500).json({ error: 'Failed to fetch premium hostels' });
+  }
+});
+
 // ============ ROOM MANAGEMENT ROUTES ============
 
-// Get all rooms for a hostel
 app.get('/api/admin/hostels/:id/rooms', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'owner') {
     return res.status(403).json({ error: 'Only admins and owners can manage rooms' });
@@ -1544,7 +1447,6 @@ app.get('/api/admin/hostels/:id/rooms', authenticate, async (req, res) => {
   }
 });
 
-// Add a new room
 app.post('/api/admin/hostels/:id/rooms', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'owner') {
     return res.status(403).json({ error: 'Only admins and owners can manage rooms' });
@@ -1580,7 +1482,6 @@ app.post('/api/admin/hostels/:id/rooms', authenticate, async (req, res) => {
   }
 });
 
-// Update a room
 app.put('/api/admin/rooms/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'owner') {
     return res.status(403).json({ error: 'Only admins and owners can manage rooms' });
@@ -1622,7 +1523,6 @@ app.put('/api/admin/rooms/:id', authenticate, async (req, res) => {
   }
 });
 
-// Delete a room
 app.delete('/api/admin/rooms/:id', authenticate, async (req, res) => {
   if (req.user.role !== 'admin' && req.user.role !== 'owner') {
     return res.status(403).json({ error: 'Only admins and owners can manage rooms' });
