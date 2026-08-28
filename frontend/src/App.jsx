@@ -9,6 +9,7 @@ import CategoryFilter from './components/CategoryFilter';
 import HorizontalHostelScroll from './components/HorizontalHostelScroll';
 import AdBanner from './components/AdBanner';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AdManagement from './AdManagement';
 import {
   Typography,
   Button,
@@ -75,7 +76,6 @@ import Chat from './Chat';
 import HostelDetails from './HostelDetails';
 import LoadingScreen from './components/LoadingScreen';
 import BookingDetails from './BookingDetails';
-import AdManagement from './AdManagement';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -142,7 +142,8 @@ function HomePage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-}
+  // ✅ FIXED: Removed extra } here
+
   // ===== MENU STATE =====
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -1095,7 +1096,7 @@ const HostelCard = ({ hostel }) => {
   // ============================================
   // RENDER - DESKTOP VIEW
   // ============================================
- return (
+  return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa' }}>
       {/* Sidebar */}
       <Drawer
@@ -1509,7 +1510,9 @@ const HostelCard = ({ hostel }) => {
 
       <DeveloperInfo />
     </Box>
-  );
+  );  // ← THIS CLOSES THE RETURN STATEMENT
+
+}  // ← THIS CLOSES THE HomePage FUNCTION - ADD THIS!
 
 // ============================================
 // MAIN LAYOUT
