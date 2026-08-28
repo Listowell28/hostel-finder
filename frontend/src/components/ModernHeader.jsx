@@ -57,19 +57,19 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
     <Box
       sx={{
         position: 'relative',
-        minHeight: { xs: '35vh', sm: '30vh', md: '25vh' },
+        minHeight: { xs: '25vh', sm: '22vh', md: '18vh' },
         display: 'flex',
         alignItems: 'center',
         background: darkMode
           ? 'linear-gradient(135deg, rgba(10,10,26,0.85) 0%, rgba(26,26,46,0.9) 100%)'
           : 'linear-gradient(135deg, rgba(15,12,41,0.8) 0%, rgba(48,43,99,0.85) 50%, rgba(36,36,62,0.9) 100%)',
         overflow: 'hidden',
-        // ✅ FULL WIDTH - NO MARGINS
-        borderRadius: 0,
-        mx: 0,
-        mt: 0,
-        mb: 0,
-        width: '100%',
+        // ✅ FULLY ROUNDED EDGES - ALL CORNERS
+        borderRadius: { xs: '18px', sm: '22px', md: '28px' },
+        mx: { xs: 1.5, sm: 2, md: 3 },
+        mt: { xs: 1, sm: 1.5, md: 2 },
+        mb: 1,
+        width: 'auto',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -81,9 +81,9 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          opacity: 0.25,
+          opacity: 0.2,
           zIndex: 0,
-          borderRadius: 0
+          borderRadius: { xs: '18px', sm: '22px', md: '28px' }
         },
         '&::after': {
           content: '""',
@@ -94,7 +94,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           bottom: 0,
           background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)',
           zIndex: 1,
-          borderRadius: 0
+          borderRadius: { xs: '18px', sm: '22px', md: '28px' }
         }
       }}
     >
@@ -104,24 +104,24 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           zIndex: 2,
           width: '100%',
           px: { xs: 2.5, sm: 3, md: 4 },
-          py: { xs: 2, sm: 2.5 }
+          py: { xs: 1.5, sm: 2 }
         }}
       >
-        {/* Top Bar - Compact */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2 } }}>
+        {/* Top Bar - Very Compact */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1, sm: 1.2 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <IconButton onClick={onMenuClick} sx={{ color: 'white', p: 0.5 }}>
-              <MenuIcon sx={{ fontSize: { xs: 22, sm: 26 } }} />
+            <IconButton onClick={onMenuClick} sx={{ color: 'white', p: 0.4 }}>
+              <MenuIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
             </IconButton>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.1rem' } }}>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
               Hostel<span style={{ color: '#e94560' }}>Finder</span>
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {user ? (
               <Avatar
                 onClick={() => navigate('/profile')}
-                sx={{ bgcolor: '#e94560', cursor: 'pointer', width: { xs: 32, sm: 36 }, height: { xs: 32, sm: 36 } }}
+                sx={{ bgcolor: '#e94560', cursor: 'pointer', width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 } }}
               >
                 {user.full_name?.charAt(0) || 'U'}
               </Avatar>
@@ -133,8 +133,8 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
                   bgcolor: '#e94560',
                   borderRadius: '50px',
                   px: { xs: 2, sm: 2.5 },
-                  py: 0.5,
-                  fontSize: { xs: '10px', sm: '12px' },
+                  py: 0.4,
+                  fontSize: { xs: '9px', sm: '11px' },
                   textTransform: 'none',
                   fontWeight: 600,
                   '&:hover': { bgcolor: '#c73652' }
@@ -146,27 +146,29 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           </Box>
         </Box>
 
-        {/* Hero Content - Small & Cute */}
-        <Box sx={{ maxWidth: '700px', mx: 'auto', textAlign: 'center' }}>
+        {/* Hero Content - Very Compact */}
+        <Box sx={{ maxWidth: '650px', mx: 'auto', textAlign: 'center' }}>
+          {/* Small Tag - Cute */}
           <Typography
             sx={{
-              color: 'rgba(255,255,255,0.4)',
-              fontSize: { xs: '0.55rem', sm: '0.65rem' },
+              color: 'rgba(255,255,255,0.35)',
+              fontSize: { xs: '0.5rem', sm: '0.6rem' },
               fontWeight: 500,
               letterSpacing: '2px',
               textTransform: 'uppercase',
-              mb: 0.8
+              mb: 0.5
             }}
           >
-            ✦ Premium Properties • Trusted Service ✦
+            ✦ Premium • Trusted ✦
           </Typography>
 
+          {/* Main Heading - Small */}
           <Typography
             sx={{
-              fontSize: { xs: '1.5rem', sm: '2.2rem', md: '2.8rem' },
+              fontSize: { xs: '1.2rem', sm: '1.8rem', md: '2.2rem' },
               fontWeight: 800,
               color: 'white',
-              mb: 0.5,
+              mb: 0.3,
               lineHeight: 1.1,
               textShadow: '0 4px 30px rgba(0,0,0,0.3)'
             }}
@@ -174,42 +176,44 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             FIND YOUR <span style={{ color: '#e94560' }}>DREAM SPACE</span>
           </Typography>
 
+          {/* Subtitle - Small */}
           <Typography
             sx={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: { xs: '0.7rem', sm: '0.85rem' },
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: { xs: '0.6rem', sm: '0.7rem' },
               fontWeight: 300,
-              maxWidth: '500px',
+              maxWidth: '450px',
               mx: 'auto',
-              mb: 1
+              mb: 0.8
             }}
           >
             Discover the best hostels and homestels in Kumasi
           </Typography>
 
+          {/* Location Badge - Very Small */}
           <Box
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 0.8,
+              gap: 0.5,
               px: 1.5,
-              py: 0.5,
+              py: 0.3,
               borderRadius: '50px',
               background: 'rgba(255,255,255,0.05)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255,255,255,0.04)'
             }}
           >
-            <LocationIcon sx={{ color: '#e94560', fontSize: { xs: 14, sm: 16 } }} />
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)', fontSize: { xs: '0.6rem', sm: '0.7rem' } }}>
+            <LocationIcon sx={{ color: '#e94560', fontSize: { xs: 12, sm: 14 } }} />
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)', fontSize: { xs: '0.55rem', sm: '0.65rem' } }}>
               {isLocating ? 'Detecting...' : location}
             </Typography>
             <IconButton
               size="small"
               onClick={detectLocation}
-              sx={{ color: 'rgba(255,255,255,0.3)', p: 0.2 }}
+              sx={{ color: 'rgba(255,255,255,0.3)', p: 0.1 }}
             >
-              <MyLocationIcon sx={{ fontSize: { xs: 10, sm: 12 } }} />
+              <MyLocationIcon sx={{ fontSize: { xs: 9, sm: 11 } }} />
             </IconButton>
           </Box>
         </Box>
