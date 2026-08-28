@@ -78,7 +78,7 @@ function AdManagement() {
       });
       const data = await res.json();
       
-      // ✅ Process ads to ensure full URLs for images
+      // ✅ Process ads to ensure full URLs for images and videos
       const processedAds = data.map(ad => ({
         ...ad,
         image: ad.image && !ad.image.startsWith('http') 
@@ -86,7 +86,8 @@ function AdManagement() {
           : ad.image,
         video_url: ad.video_url && !ad.video_url.startsWith('http')
           ? `${API_URL}${ad.video_url}`
-          : ad.video_url
+          : ad.video_url,
+        type: ad.video_url ? 'video' : (ad.type || 'image')
       }));
       
       setAds(processedAds);
@@ -97,7 +98,7 @@ function AdManagement() {
     }
   };
 
-  // ✅ Handle file upload for images/videos
+  // ✅ Handle file upload for images/videos - FIXED
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -117,7 +118,7 @@ function AdManagement() {
       return;
     }
 
-    // ✅ Check if token exists
+    // Check token
     if (!token) {
       setError('Please login first');
       return;
@@ -148,21 +149,21 @@ function AdManagement() {
         ? data.url 
         : `${API_URL}${data.url}`;
 
-      // ✅ Set the URL based on file type
-      if (isImage) {
+      // ✅ Update form based on file type - CRITICAL FIX
+      if (isVideo) {
         setForm({ 
           ...form, 
-          image: fileUrl,  // ✅ Store full URL
-          type: 'image',
-          video_url: ''    // ✅ Clear video URL
+          video_url: fileUrl,    // ✅ Store video URL
+          image: '',              // ✅ Clear image URL
+          type: 'video'           // ✅ Set type to video
         });
         setPreviewUrl(fileUrl);
-      } else if (isVideo) {
+      } else if (isImage) {
         setForm({ 
           ...form, 
-          video_url: fileUrl,  // ✅ Store full URL
-          type: 'video',
-          image: ''            // ✅ Clear image URL
+          image: fileUrl,         // ✅ Store image URL
+          video_url: '',          // ✅ Clear video URL
+          type: 'image'           // ✅ Set type to image
         });
         setPreviewUrl(fileUrl);
       }
@@ -185,12 +186,12 @@ function AdManagement() {
       
       const method = editingAd ? 'PUT' : 'POST';
 
-      // ✅ Prepare ad data
+      // ✅ Include video_url in ad data
       const adData = {
         title: form.title,
         description: form.description,
         image: form.image || null,
-        video_url: form.video_url || null,
+        video_url: form.video_url || null,  // ✅ Include video_url
         link: form.link || null,
         position: form.position,
         price: parseFloat(form.price) || 0,
@@ -259,7 +260,8 @@ function AdManagement() {
     setForm({
       ...ad,
       image: ad.image || '',
-      video_url: ad.video_url || ''
+      video_url: ad.video_url || '',
+      type: ad.type || (ad.video_url ? 'video' : 'image')
     });
     setPreviewUrl(ad.image || ad.video_url || '');
     setDialogOpen(true);
@@ -353,7 +355,34 @@ function AdManagement() {
                 <TableRow key={ad.id}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      {ad.image && ad.type !== 'video' ? (
+                      {ad.type === 'video' && ad.video_url ? (
+                        <Box sx={{ 
+                          width: 50, 
+                          height: 50, 
+                          bgcolor: '#000', 
+                          borderRadius: 8, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          position: 'relative'
+                        }}>
+                          <VideoIcon sx={{ color: 'white', fontSize: 30 }} />
+                          <Chip
+                            label="VIDEO"
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              bottom: -4,
+                              right: -4,
+                              bgcolor: '#e94560',
+                              color: 'white',
+                              fontSize: '0.4rem',
+                              height: 14,
+                              '& .MuiChip-label': { px: 0.5 }
+                            }}
+                          />
+                        </Box>
+                      ) : ad.image ? (
                         <img 
                           src={ad.image} 
                           alt={ad.title} 
@@ -362,12 +391,8 @@ function AdManagement() {
                             e.target.src = 'https://placehold.co/50x50/e94560/white?text=Error';
                           }}
                         />
-                      ) : ad.video_url ? (
-                        <Box sx={{ width: 50, height: 50, bgcolor: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <VideoIcon sx={{ color: 'white' }} />
-                        </Box>
                       ) : (
-                        <ImageIcon sx={{ color: '#8892b0' }} />
+                        <ImageIcon sx={{ color: '#8892b0', fontSize: 40 }} />
                       )}
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{ad.title}</Typography>
@@ -464,7 +489,7 @@ function AdManagement() {
                 Supports JPG, PNG, GIF, WebP, MP4 (Max 10MB)
               </Typography>
               
-              {/* ✅ Preview - Fixed */}
+              {/* Preview */}
               {previewUrl && (
                 <Box sx={{ mt: 2 }}>
                   {form.type === 'video' ? (
