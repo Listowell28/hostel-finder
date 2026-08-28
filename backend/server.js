@@ -1309,7 +1309,7 @@ app.get('/api/premium/hostels', authenticate, async (req, res) => {
 
 // ============ AD FILE UPLOAD ROUTE ============
 const multer = require('multer');
-const path = require('path');
+const adpath = require('path');
 const fs = require('fs');
 
 // Ensure ad-uploads directory exists
