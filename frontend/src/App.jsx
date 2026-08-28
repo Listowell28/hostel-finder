@@ -7,6 +7,7 @@ import ModernHeader from './components/ModernHeader';
 import MobileSidebar from './components/MobileSidebar';
 import CategoryFilter from './components/CategoryFilter';
 import HorizontalHostelScroll from './components/HorizontalHostelScroll';
+import AdBanner from './components/AdBanner';
 import {
   Typography,
   Button,
@@ -139,7 +140,7 @@ function HomePage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+}
   // ===== MENU STATE =====
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -880,6 +881,11 @@ const HostelCard = ({ hostel }) => {
           onCategoryChange={setSelectedCategory}
         />
 
+        {/* ✅ AD BANNER - ADDED HERE (After Category Filter) */}
+        <Box sx={{ px: 2, mt: 1 }}>
+          <AdBanner position="homepage" darkMode={darkMode} />
+        </Box>
+
         {/* ✅ HORIZONTAL SCROLL - POPULAR PROPERTIES (ALL HOSTELS) */}
         {!loading && filteredHostels.length > 0 && (
           <HorizontalHostelScroll
@@ -943,140 +949,140 @@ const HostelCard = ({ hostel }) => {
         </Paper>
 
         {/* ✅ BOOKING DIALOG - MOBILE (Booking First, Then Payment) */}
-<Dialog
-  open={!!bookingDialog}
-  onClose={() => {
-    setBookingDialog(null);
-    setSelectedRoom(null);
-    setPhoneNumber('');
-    setRoomType('');
-    setGuests(1);
-    setBookingError('');
-    setBookingSuccess('');
-  }}
-  maxWidth="sm"
-  fullWidth
-  PaperProps={{
-    sx: {
-      borderRadius: { xs: 0, sm: 4 },
-      margin: { xs: 0, sm: 2 },
-      maxHeight: '90vh',
-      position: 'fixed',
-      bottom: { xs: 0, sm: 'auto' },
-      top: { xs: 'auto', sm: 'auto' },
-      width: '100%'
-    }
-  }}
->
-  <DialogTitle sx={{ color: '#1a1a2e', fontWeight: 700 }}>
-    Book {bookingDialog?.name}
-  </DialogTitle>
-  
-  <DialogContent>
-    {bookingError && <Alert severity="error" sx={{ mb: 2 }}>{bookingError}</Alert>}
-    {bookingSuccess && <Alert severity="success" sx={{ mb: 2 }}>{bookingSuccess}</Alert>}
-    
-    <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="body2" sx={{ color: '#8892b0' }}>
-          Price: GH₵{bookingDialog?.price_per_year}/year
-        </Typography>
-        <Chip
-          label={bookingDialog?.available !== false ? "Available" : "Unavailable"}
-          color={bookingDialog?.available !== false ? "success" : "error"}
-          size="small"
-        />
-      </Box>
-
-      <TextField
-        label="Phone Number"
-        type="tel"
-        fullWidth
-        value={phoneNumber}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-        placeholder="0244123456"
-        helperText="Enter your phone number for booking confirmation"
-        required
-      />
-
-      <Box>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-          Select Room Type
-        </Typography>
-        <Grid container spacing={1}>
-          {['1 in a room', '2 in a room', '3 in a room'].map((type) => (
-            <Grid item xs={4} key={type}>
-              <Card
-                onClick={() => setRoomType(type)}
-                sx={{
-                  cursor: 'pointer',
-                  border: roomType === type ? '2px solid #e94560' : '1px solid #ddd',
-                  borderRadius: 2,
-                  p: 2,
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease',
-                  bgcolor: roomType === type ? 'rgba(233,69,96,0.05)' : 'white',
-                  '&:hover': {
-                    borderColor: '#e94560',
-                    transform: 'scale(1.02)'
-                  }
-                }}
-              >
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
-                  {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+        <Dialog
+          open={!!bookingDialog}
+          onClose={() => {
+            setBookingDialog(null);
+            setSelectedRoom(null);
+            setPhoneNumber('');
+            setRoomType('');
+            setGuests(1);
+            setBookingError('');
+            setBookingSuccess('');
+          }}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 0, sm: 4 },
+              margin: { xs: 0, sm: 2 },
+              maxHeight: '90vh',
+              position: 'fixed',
+              bottom: { xs: 0, sm: 'auto' },
+              top: { xs: 'auto', sm: 'auto' },
+              width: '100%'
+            }
+          }}
+        >
+          <DialogTitle sx={{ color: '#1a1a2e', fontWeight: 700 }}>
+            Book {bookingDialog?.name}
+          </DialogTitle>
+          
+          <DialogContent>
+            {bookingError && <Alert severity="error" sx={{ mb: 2 }}>{bookingError}</Alert>}
+            {bookingSuccess && <Alert severity="success" sx={{ mb: 2 }}>{bookingSuccess}</Alert>}
+            
+            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" sx={{ color: '#8892b0' }}>
+                  Price: GH₵{bookingDialog?.price_per_year}/year
                 </Typography>
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                  {type}
+                <Chip
+                  label={bookingDialog?.available !== false ? "Available" : "Unavailable"}
+                  color={bookingDialog?.available !== false ? "success" : "error"}
+                  size="small"
+                />
+              </Box>
+
+              <TextField
+                label="Phone Number"
+                type="tel"
+                fullWidth
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="0244123456"
+                helperText="Enter your phone number for booking confirmation"
+                required
+              />
+
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                  Select Room Type
                 </Typography>
-                {roomType === type && (
-                  <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
-                    Selected
+                <Grid container spacing={1}>
+                  {['1 in a room', '2 in a room', '3 in a room'].map((type) => (
+                    <Grid item xs={4} key={type}>
+                      <Card
+                        onClick={() => setRoomType(type)}
+                        sx={{
+                          cursor: 'pointer',
+                          border: roomType === type ? '2px solid #e94560' : '1px solid #ddd',
+                          borderRadius: 2,
+                          p: 2,
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease',
+                          bgcolor: roomType === type ? 'rgba(233,69,96,0.05)' : 'white',
+                          '&:hover': {
+                            borderColor: '#e94560',
+                            transform: 'scale(1.02)'
+                          }
+                        }}
+                      >
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
+                          {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                          {type}
+                        </Typography>
+                        {roomType === type && (
+                          <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
+                            Selected
+                          </Typography>
+                        )}
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+                {!roomType && (
+                  <Typography variant="caption" sx={{ color: '#e94560', display: 'block', mt: 1 }}>
+                    Please select a room type
                   </Typography>
                 )}
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-        {!roomType && (
-          <Typography variant="caption" sx={{ color: '#e94560', display: 'block', mt: 1 }}>
-            Please select a room type
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  </DialogContent>
-  
-  <DialogActions sx={{ p: 3, pt: 0 }}>
-    <Button
-      onClick={() => {
-        setBookingDialog(null);
-        setSelectedRoom(null);
-        setPhoneNumber('');
-        setRoomType('');
-        setGuests(1);
-        setBookingError('');
-        setBookingSuccess('');
-      }}
-      sx={{ color: '#8892b0' }}
-    >
-      Cancel
-    </Button>
-    <Button
-      variant="contained"
-      onClick={handleConfirmBooking}  // ← This creates the booking FIRST
-      disabled={bookingLoading || !phoneNumber || !roomType}
-      sx={{
-        background: 'linear-gradient(135deg, #e94560, #c73652)',
-        borderRadius: 50,
-        px: 4,
-        fontWeight: 600,
-        '&:hover': { background: 'linear-gradient(135deg, #c73652, #a82842)' }
-      }}
-    >
-      {bookingLoading ? 'Processing...' : 'Confirm Booking'}
-    </Button>
-  </DialogActions>
-</Dialog>
+              </Box>
+            </Box>
+          </DialogContent>
+          
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button
+              onClick={() => {
+                setBookingDialog(null);
+                setSelectedRoom(null);
+                setPhoneNumber('');
+                setRoomType('');
+                setGuests(1);
+                setBookingError('');
+                setBookingSuccess('');
+              }}
+              sx={{ color: '#8892b0' }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleConfirmBooking}
+              disabled={bookingLoading || !phoneNumber || !roomType}
+              sx={{
+                background: 'linear-gradient(135deg, #e94560, #c73652)',
+                borderRadius: 50,
+                px: 4,
+                fontWeight: 600,
+                '&:hover': { background: 'linear-gradient(135deg, #c73652, #a82842)' }
+              }}
+            >
+              {bookingLoading ? 'Processing...' : 'Confirm Booking'}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* ✅ DEVELOPER INFO */}
         <DeveloperInfo />
@@ -1087,7 +1093,7 @@ const HostelCard = ({ hostel }) => {
   // ============================================
   // RENDER - DESKTOP VIEW
   // ============================================
-  return (
+ return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa' }}>
       {/* Sidebar */}
       <Drawer
@@ -1264,6 +1270,11 @@ const HostelCard = ({ hostel }) => {
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
         />
+
+        {/* ✅ AD BANNER - DESKTOP (ADDED HERE) */}
+        <Box sx={{ px: 2, mt: 2, maxWidth: '1200px', mx: 'auto' }}>
+          <AdBanner position="homepage" darkMode={darkMode} />
+        </Box>
 
         {showMap && <Box sx={{ mb: 4 }}><HostelMapLeaflet hostels={filteredHostels} /></Box>}
 
@@ -1488,7 +1499,6 @@ const HostelCard = ({ hostel }) => {
       <DeveloperInfo />
     </Box>
   );
-}
 
 // ============================================
 // MAIN LAYOUT

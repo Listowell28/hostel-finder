@@ -1088,6 +1088,106 @@ app.delete('/api/admin/hostels/:id', authenticate, async (req, res) => {
   }
 });
 
+// ============ AD ROUTES ============
+
+// Get ads by position
+app.get('/api/ads', async (req, res) => {
+  try {
+    const { position } = req.query;
+    let query = 'SELECT * FROM ads WHERE active = true';
+    if (position) {
+      query += ` AND position = '${position}'`;
+    }
+    query += ' ORDER BY created_at DESC';
+    
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching ads:', err);
+    res.status(500).json({ error: 'Failed to fetch ads' });
+  }
+});
+
+// Create ad (admin only)
+app.post('/api/ads', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { title, description, image, link, position, price, active } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO ads (title, description, image, link, position, price, active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [title, description, image, link, position, parseFloat(price), active !== false]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating ad:', err);
+    res.status(500).json({ error: 'Failed to create ad' });
+  }
+});
+
+// Update ad (admin only)
+app.put('/api/ads/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { id } = req.params;
+  const { title, description, image, link, position, price, active } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE ads 
+       SET title = $1, description = $2, image = $3, link = $4, 
+           position = $5, price = $6, active = $7
+       WHERE id = $8
+       RETURNING *`,
+      [title, description, image, link, position, parseFloat(price), active !== false, id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating ad:', err);
+    res.status(500).json({ error: 'Failed to update ad' });
+  }
+});
+
+// Delete ad (admin only)
+app.delete('/api/ads/:id', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { id } = req.params;
+
+  try {
+    await pool.query('DELETE FROM ads WHERE id = $1', [id]);
+    res.json({ message: 'Ad deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting ad:', err);
+    res.status(500).json({ error: 'Failed to delete ad' });
+  }
+});
+
+// Track ad click
+app.post('/api/ads/:id/click', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query(
+      'UPDATE ads SET clicks = clicks + 1 WHERE id = $1',
+      [id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error tracking click:', err);
+    res.status(500).json({ error: 'Failed to track click' });
+  }
+});
+
 // ============ ADMIN BOOKING MANAGEMENT ============
 
 // Get all bookings (admin only)
