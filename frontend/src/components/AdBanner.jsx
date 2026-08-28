@@ -47,17 +47,33 @@ function AdBanner({ position = 'homepage', darkMode }) {
   }, [ads.length, isPlaying]);
 
   useEffect(() => {
-    // Play video when it becomes visible
-    if (videoRef.current && ads[currentIndex]?.type === 'video') {
+    // ✅ Play video when it becomes visible
+    const currentAd = ads[currentIndex];
+    if (currentAd?.type === 'video' && videoRef.current) {
+      videoRef.current.load();
       videoRef.current.play().catch(() => {});
+      setIsPlaying(true);
     }
-  }, [currentIndex]);
+  }, [currentIndex, ads]);
 
   const fetchAds = async () => {
     try {
       const res = await fetch(`${API_URL}/api/ads?position=${position}`);
       const data = await res.json();
-      setAds(data);
+      
+      // ✅ Process ads - ensure full URLs
+      const processedAds = data.map(ad => ({
+        ...ad,
+        image: ad.image && !ad.image.startsWith('http') 
+          ? `${API_URL}${ad.image}` 
+          : ad.image,
+        video_url: ad.video_url && !ad.video_url.startsWith('http')
+          ? `${API_URL}${ad.video_url}`
+          : ad.video_url,
+        type: ad.video_url ? 'video' : (ad.type || 'image')
+      }));
+      
+      setAds(processedAds);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching ads:', err);
@@ -67,12 +83,12 @@ function AdBanner({ position = 'homepage', darkMode }) {
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % ads.length);
-    setIsPlaying(false);
+    setIsPlaying(true);
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
-    setIsPlaying(false);
+    setIsPlaying(true);
   };
 
   const handleAdClick = () => {
@@ -85,20 +101,29 @@ function AdBanner({ position = 'homepage', darkMode }) {
   };
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
         videoRef.current.play();
+        setIsPlaying(true);
       }
     }
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  // ✅ Handle video end
+  const handleVideoEnd = () => {
+    // Move to next ad
+    if (ads.length > 1) {
+      setCurrentIndex((prev) => (prev + 1) % ads.length);
     }
   };
 
@@ -142,32 +167,38 @@ function AdBanner({ position = 'homepage', darkMode }) {
 
       {/* ✅ Media Content */}
       <Box
-        onClick={handleAdClick}
+        onClick={!isVideo ? handleAdClick : undefined}
         sx={{
           position: 'relative',
           width: '100%',
           height: { xs: 160, sm: 180, md: 200 },
-          cursor: 'pointer',
+          cursor: isVideo ? 'default' : 'pointer',
           overflow: 'hidden',
           bgcolor: '#000'
         }}
       >
-        {isVideo ? (
-          // ✅ Video Player
+        {isVideo && ad.video_url ? (
+          // ✅ Video Player - FIXED
           <>
             <video
               ref={videoRef}
-              src={ad.video_url || ad.image}
-              poster={ad.poster || ''}
+              src={ad.video_url}
+              poster={ad.image || ''}
               muted={isMuted}
-              loop
+              autoPlay
               playsInline
+              loop={false}
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover'
               }}
               onClick={(e) => e.stopPropagation()}
+              onEnded={handleVideoEnd}
+              onError={(e) => {
+                console.error('❌ Video error:', e);
+                // Fallback to image if video fails
+              }}
             />
             
             {/* Video Controls Overlay */}
@@ -222,8 +253,32 @@ function AdBanner({ position = 'homepage', darkMode }) {
                   fontSize: '0.6rem'
                 }}
               >
-                {isPlaying ? 'Playing' : 'Paused'}
+                {isPlaying ? '▶ Playing' : '⏸ Paused'}
               </Typography>
+
+              {/* ✅ Click to view ad */}
+              {ad.link && (
+                <Button
+                  size="small"
+                  sx={{
+                    ml: 'auto',
+                    color: 'white',
+                    bgcolor: 'rgba(233,69,96,0.8)',
+                    borderRadius: 50,
+                    px: 2,
+                    py: 0.3,
+                    fontSize: '0.6rem',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: 'rgba(233,69,96,1)' }
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAdClick();
+                  }}
+                >
+                  Learn More →
+                </Button>
+              )}
             </Box>
 
             {/* Video Duration Badge */}
@@ -244,7 +299,7 @@ function AdBanner({ position = 'homepage', darkMode }) {
         ) : (
           // ✅ Image Display
           <img
-            src={ad.image}
+            src={ad.image || 'https://placehold.co/800x200/e94560/white?text=Ad'}
             alt={ad.title}
             style={{
               width: '100%',
@@ -265,7 +320,7 @@ function AdBanner({ position = 'homepage', darkMode }) {
             bottom: 0,
             left: 0,
             right: 0,
-            height: '50%',
+            height: isVideo ? '40%' : '50%',
             background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
             pointerEvents: 'none'
           }}
@@ -309,28 +364,30 @@ function AdBanner({ position = 'homepage', darkMode }) {
               {ad.description}
             </Typography>
           )}
-          <Button
-            size="small"
-            sx={{
-              mt: 0.5,
-              color: '#e94560',
-              bgcolor: 'rgba(255,255,255,0.9)',
-              borderRadius: 50,
-              px: 2,
-              py: 0.3,
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              pointerEvents: 'auto',
-              '&:hover': { bgcolor: 'white' }
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAdClick();
-            }}
-          >
-            Learn More →
-          </Button>
+          {!isVideo && (
+            <Button
+              size="small"
+              sx={{
+                mt: 0.5,
+                color: '#e94560',
+                bgcolor: 'rgba(255,255,255,0.9)',
+                borderRadius: 50,
+                px: 2,
+                py: 0.3,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                pointerEvents: 'auto',
+                '&:hover': { bgcolor: 'white' }
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAdClick();
+              }}
+            >
+              Learn More →
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -387,7 +444,7 @@ function AdBanner({ position = 'homepage', darkMode }) {
             {ads.map((_, index) => (
               <Box
                 key={index}
-                onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); setIsPlaying(false); }}
+                onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); setIsPlaying(true); }}
                 sx={{
                   width: 8,
                   height: 8,
