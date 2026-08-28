@@ -1190,33 +1190,52 @@ app.post('/api/ads/:id/click', async (req, res) => {
 
 // ============ PREMIUM ROUTES ============
 
-// Upgrade hostel to premium
+// Toggle premium status (admin only)
 app.post('/api/premium/upgrade', authenticate, async (req, res) => {
   const { hostelId, tier } = req.body;
+
+  console.log('📤 Premium upgrade request:', { hostelId, tier });
 
   if (!hostelId || !tier) {
     return res.status(400).json({ error: 'Hostel ID and tier are required' });
   }
 
-  if (!['premium', 'vip'].includes(tier)) {
-    return res.status(400).json({ error: 'Invalid tier' });
+  if (!['premium', 'vip', 'free'].includes(tier)) {
+    return res.status(400).json({ error: 'Invalid tier. Use premium, vip, or free' });
   }
 
   try {
-    // Check ownership
+    // Check if hostel exists
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [hostelId]);
     if (check.rows.length === 0) {
       return res.status(404).json({ error: 'Hostel not found' });
     }
+
+    // Check authorization (admin or owner)
     if (check.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // If tier is 'free', remove premium
+    if (tier === 'free') {
+      const result = await pool.query(
+        `UPDATE hostels 
+         SET is_premium = false, premium_tier = 'free', premium_expiry = NULL
+         WHERE id = $1
+         RETURNING *`,
+        [hostelId]
+      );
+      return res.json({
+        message: 'Premium removed successfully',
+        hostel: result.rows[0]
+      });
     }
 
     // Set expiry date (30 days from now)
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
 
-    // Update hostel
+    // Update hostel to premium
     const result = await pool.query(
       `UPDATE hostels 
        SET is_premium = true, premium_tier = $1, premium_expiry = $2
@@ -1233,6 +1252,7 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
       [hostelId, tier, price, expiryDate]
     );
 
+    console.log('✅ Hostel upgraded to:', tier);
     res.json({
       message: `Hostel upgraded to ${tier.toUpperCase()} successfully!`,
       hostel: result.rows[0]
@@ -1240,7 +1260,7 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
 
   } catch (err) {
     console.error('❌ Premium upgrade error:', err);
-    res.status(500).json({ error: 'Failed to upgrade hostel' });
+    res.status(500).json({ error: 'Failed to upgrade hostel: ' + err.message });
   }
 });
 
@@ -1255,10 +1275,12 @@ app.get('/api/premium/stats', authenticate, async (req, res) => {
       'SELECT COUNT(*) FROM hostels WHERE is_premium = true'
     );
     const vipCount = await pool.query(
-      'SELECT COUNT(*) FROM hostels WHERE premium_tier = "vip"'
+      'SELECT COUNT(*) FROM hostels WHERE premium_tier = $1',
+      ['vip']
     );
     const revenue = await pool.query(
-      'SELECT SUM(price) FROM premium_subscriptions WHERE status = "active"'
+      'SELECT COALESCE(SUM(price), 0) FROM premium_subscriptions WHERE status = $1',
+      ['active']
     );
 
     res.json({
@@ -1269,6 +1291,19 @@ app.get('/api/premium/stats', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Error fetching premium stats:', err);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Get all premium hostels
+app.get('/api/premium/hostels', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM hostels WHERE is_premium = true ORDER BY premium_tier DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching premium hostels:', err);
+    res.status(500).json({ error: 'Failed to fetch premium hostels' });
   }
 });
 
