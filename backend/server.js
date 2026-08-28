@@ -1188,6 +1188,90 @@ app.post('/api/ads/:id/click', async (req, res) => {
   }
 });
 
+// ============ PREMIUM ROUTES ============
+
+// Upgrade hostel to premium
+app.post('/api/premium/upgrade', authenticate, async (req, res) => {
+  const { hostelId, tier } = req.body;
+
+  if (!hostelId || !tier) {
+    return res.status(400).json({ error: 'Hostel ID and tier are required' });
+  }
+
+  if (!['premium', 'vip'].includes(tier)) {
+    return res.status(400).json({ error: 'Invalid tier' });
+  }
+
+  try {
+    // Check ownership
+    const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [hostelId]);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found' });
+    }
+    if (check.rows[0].owner_id !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Set expiry date (30 days from now)
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    // Update hostel
+    const result = await pool.query(
+      `UPDATE hostels 
+       SET is_premium = true, premium_tier = $1, premium_expiry = $2
+       WHERE id = $3
+       RETURNING *`,
+      [tier, expiryDate, hostelId]
+    );
+
+    // Create subscription record
+    const price = tier === 'vip' ? 250 : 100;
+    await pool.query(
+      `INSERT INTO premium_subscriptions (hostel_id, tier, price, end_date)
+       VALUES ($1, $2, $3, $4)`,
+      [hostelId, tier, price, expiryDate]
+    );
+
+    res.json({
+      message: `Hostel upgraded to ${tier.toUpperCase()} successfully!`,
+      hostel: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error('❌ Premium upgrade error:', err);
+    res.status(500).json({ error: 'Failed to upgrade hostel' });
+  }
+});
+
+// Get premium stats
+app.get('/api/premium/stats', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const premiumCount = await pool.query(
+      'SELECT COUNT(*) FROM hostels WHERE is_premium = true'
+    );
+    const vipCount = await pool.query(
+      'SELECT COUNT(*) FROM hostels WHERE premium_tier = "vip"'
+    );
+    const revenue = await pool.query(
+      'SELECT SUM(price) FROM premium_subscriptions WHERE status = "active"'
+    );
+
+    res.json({
+      premiumCount: parseInt(premiumCount.rows[0].count),
+      vipCount: parseInt(vipCount.rows[0].count),
+      revenue: parseFloat(revenue.rows[0].sum) || 0
+    });
+  } catch (err) {
+    console.error('Error fetching premium stats:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
 // ============ ADMIN BOOKING MANAGEMENT ============
 
 // Get all bookings (admin only)

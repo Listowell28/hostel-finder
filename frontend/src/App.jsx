@@ -10,6 +10,7 @@ import HorizontalHostelScroll from './components/HorizontalHostelScroll';
 import AdBanner from './components/AdBanner';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AdManagement from './AdManagement';
+import PremiumManager from './components/PremiumManager';
 import {
   Typography,
   Button,
@@ -294,7 +295,7 @@ function HomePage() {
     }
   };
 
-  // ✅ FILTERED HOSTELS WITH CATEGORY
+  // ✅ FILTERED HOSTELS WITH CATEGORY AND PREMIUM SORTING
   const getFilteredHostels = () => {
     let filtered = hostels;
     
@@ -313,13 +314,23 @@ function HomePage() {
       );
     }
     
+    // ✅ PREMIUM SORTING: VIP first, Premium second, then regular
+    filtered = filtered.sort((a, b) => {
+      const getOrder = (h) => {
+        if (h.premium_tier === 'vip') return 0;
+        if (h.is_premium) return 1;
+        return 2;
+      };
+      return getOrder(a) - getOrder(b);
+    });
+    
     return filtered;
   };
 
   const filteredHostels = getFilteredHostels();
 
   // ============================================
-// ✅ LUXURY HOSTEL CARD - FIXED BOOK NOW
+// ✅ LUXURY HOSTEL CARD - WITH PREMIUM BADGE
 // ============================================
 const HostelCard = ({ hostel }) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -456,6 +467,32 @@ const HostelCard = ({ hostel }) => {
           </Box>
         )}
 
+        {/* ✅ PREMIUM BADGE - ADDED HERE */}
+        {hostel.is_premium && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              bgcolor: hostel.premium_tier === 'vip' ? '#ffd700' : '#e94560',
+              color: 'white',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 2,
+              fontSize: '10px',
+              fontWeight: 700,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              zIndex: 5,
+              letterSpacing: '0.3px'
+            }}
+          >
+            {hostel.premium_tier === 'vip' ? '👑 VIP' : '⭐ Premium'}
+          </Box>
+        )}
+
         <Box
           sx={{
             position: 'absolute',
@@ -493,7 +530,7 @@ const HostelCard = ({ hostel }) => {
           sx={{
             position: 'absolute',
             top: 16,
-            right: 16,
+            left: 16,
             bgcolor: 'rgba(0,0,0,0.7)',
             color: '#ffd700',
             px: 1.5,
@@ -1154,6 +1191,14 @@ const HostelCard = ({ hostel }) => {
               <ListItemText primary="Admin Dashboard" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
             </ListItem>
           )}
+          
+          {/* ✅ PREMIUM MANAGEMENT - ADDED FOR ADMIN AND OWNER */}
+          {(user?.role === 'admin' || user?.role === 'owner') && (
+            <ListItem button component={Link} to="/premium" sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}>
+              <ListItemIcon><StarIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+              <ListItemText primary="Premium Listings" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+            </ListItem>
+          )}
         </List>
 
         <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)' }} />
@@ -1512,7 +1557,7 @@ const HostelCard = ({ hostel }) => {
     </Box>
   );  // ← THIS CLOSES THE RETURN STATEMENT
 
-}  // ← THIS CLOSES THE HomePage FUNCTION - ADD THIS!
+}  // ← THIS CLOSES THE HomePage FUNCTION
 
 // ============================================
 // MAIN LAYOUT
@@ -1532,6 +1577,7 @@ function MainLayout() {
       <Route path="/hostel/:id" element={<HostelDetails />} />
       <Route path="/booking/:id" element={<BookingDetails />} />
       <Route path="/admin/ads" element={<AdManagement />} />
+      <Route path="/premium" element={<PremiumManager />} />
     </Routes>
   );
 }
