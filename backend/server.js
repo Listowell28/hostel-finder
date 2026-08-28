@@ -48,6 +48,46 @@ app.use('/api/bookings', bookingRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname,'uploads')));
 
+// ============ AD UPLOAD CONFIG ============
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const adUploadDir = path.join(__dirname, 'uploads', 'ads');
+if (!fs.existsSync(adUploadDir)) {
+  fs.mkdirSync(adUploadDir, { recursive: true });
+}
+
+const adStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, adUploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const adFileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images and MP4 videos allowed.'), false);
+  }
+};
+
+const adUpload = multer({
+  storage: adStorage,
+  fileFilter: adFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
+// ✅ Then the route AFTER the config
+app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, res) => {
+  // ... upload logic
+});
+
 // ✅ REGISTER REVIEW ROUTES
 // ============================================
 const reviewRoutes = require('./src/routes/reviewRoutes');
@@ -809,6 +849,8 @@ app.delete('/api/reviews/:id', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to delete review' });
   }
 });
+
+
 
 // ============ IMAGE UPLOAD ROUTE ============
 const { upload, uploadMultiple, uploadToSupabase } = require('./upload');
