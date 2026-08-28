@@ -50,7 +50,6 @@ app.use('/uploads', express.static(path.join(__dirname,'uploads')));
 
 // ============ AD UPLOAD CONFIG ============
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 
 const adUploadDir = path.join(__dirname, 'uploads', 'ads');
@@ -1351,6 +1350,7 @@ app.get('/api/premium/hostels', authenticate, async (req, res) => {
 
 // ============ AD FILE UPLOAD ROUTE ============
 const multer = require('multer');
+const adpath = require('path');
 const fs = require('fs');
 
 // Ensure ad-uploads directory exists
