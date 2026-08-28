@@ -1353,7 +1353,7 @@ const adpath = require('path');
 const adfs = require('fs');
 
 // Ensure ad-uploads directory exists
-const adUploadDir = path.join(__dirname, 'uploads', 'ads');
+const addUploadDir = path.join(__dirname, 'uploads', 'ads');
 if (!fs.existsSync(adUploadDir)) {
   fs.mkdirSync(adUploadDir, { recursive: true });
 }
