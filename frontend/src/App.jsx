@@ -74,6 +74,7 @@ import Chat from './Chat';
 import HostelDetails from './HostelDetails';
 import LoadingScreen from './components/LoadingScreen';
 import BookingDetails from './BookingDetails';
+import AdManagement from './AdManagement';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -1517,6 +1518,7 @@ function MainLayout() {
       <Route path="/social-callback" element={<SocialCallback />} />
       <Route path="/hostel/:id" element={<HostelDetails />} />
       <Route path="/booking/:id" element={<BookingDetails />} />
+      <Route path="/admin/ads" element={<AdManagement />} />
     </Routes>
   );
 }
