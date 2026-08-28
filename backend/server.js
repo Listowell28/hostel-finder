@@ -1307,6 +1307,70 @@ app.get('/api/premium/hostels', authenticate, async (req, res) => {
   }
 });
 
+// ============ AD FILE UPLOAD ROUTE ============
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure ad-uploads directory exists
+const adUploadDir = path.join(__dirname, 'uploads', 'ads');
+if (!fs.existsSync(adUploadDir)) {
+  fs.mkdirSync(adUploadDir, { recursive: true });
+}
+
+// Configure multer for ad uploads
+const adStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, adUploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const adFileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images and MP4 videos allowed.'), false);
+  }
+};
+
+const adUpload = multer({
+  storage: adStorage,
+  fileFilter: adFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
+// Upload ad file
+app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/ads/${req.file.filename}`;
+    const isVideo = req.file.mimetype.startsWith('video/');
+
+    res.json({
+      success: true,
+      url: fileUrl,
+      type: isVideo ? 'video' : 'image',
+      filename: req.file.filename
+    });
+
+  } catch (err) {
+    console.error('❌ Ad upload error:', err);
+    res.status(500).json({ error: 'Failed to upload file' });
+  }
+});
+
 // ============ ADMIN BOOKING MANAGEMENT ============
 
 // Get all bookings (admin only)

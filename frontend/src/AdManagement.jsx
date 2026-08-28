@@ -20,13 +20,20 @@ import {
   Alert,
   CircularProgress,
   Switch,
-  Grid  // ✅ ADDED Grid HERE
+  Grid,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  TrendingUp as TrendingUpIcon
+  CloudUpload as UploadIcon,
+  Image as ImageIcon,
+  Videocam as VideoIcon
 } from '@mui/icons-material';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -38,14 +45,18 @@ function AdManagement() {
   const [success, setSuccess] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [form, setForm] = useState({
     title: '',
     description: '',
     image: '',
+    video_url: '',
     link: '',
     position: 'homepage',
     price: '',
-    active: true
+    active: true,
+    type: 'image'
   });
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -71,6 +82,62 @@ function AdManagement() {
     } catch (err) {
       setError('Failed to fetch ads');
       setLoading(false);
+    }
+  };
+
+  // ✅ Handle file upload for images/videos
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check file type
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    
+    if (!isImage && !isVideo) {
+      setError('Please upload an image or video file');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${API_URL}/api/upload/ad`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+      // Set the URL based on file type
+      if (isImage) {
+        setForm({ ...form, image: data.url, type: 'image' });
+        setPreviewUrl(data.url);
+      } else if (isVideo) {
+        setForm({ ...form, video_url: data.url, type: 'video' });
+        setPreviewUrl(data.url);
+      }
+
+      setSuccess('✅ File uploaded successfully!');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+      event.target.value = '';
     }
   };
 
@@ -124,17 +191,21 @@ function AdManagement() {
       title: '',
       description: '',
       image: '',
+      video_url: '',
       link: '',
       position: 'homepage',
       price: '',
-      active: true
+      active: true,
+      type: 'image'
     });
+    setPreviewUrl('');
     setEditingAd(null);
   };
 
   const handleEdit = (ad) => {
     setEditingAd(ad);
     setForm(ad);
+    setPreviewUrl(ad.image || ad.video_url || '');
     setDialogOpen(true);
   };
 
@@ -213,6 +284,7 @@ function AdManagement() {
             <TableHead>
               <TableRow sx={{ bgcolor: '#f5f7fa' }}>
                 <TableCell>Ad</TableCell>
+                <TableCell>Type</TableCell>
                 <TableCell>Position</TableCell>
                 <TableCell>Price</TableCell>
                 <TableCell>Clicks</TableCell>
@@ -225,14 +297,28 @@ function AdManagement() {
                 <TableRow key={ad.id}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      {ad.image && (
+                      {ad.image && ad.type !== 'video' ? (
                         <img src={ad.image} alt={ad.title} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 8 }} />
+                      ) : ad.video_url ? (
+                        <Box sx={{ width: 50, height: 50, bgcolor: '#000', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <VideoIcon sx={{ color: 'white' }} />
+                        </Box>
+                      ) : (
+                        <ImageIcon sx={{ color: '#8892b0' }} />
                       )}
                       <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{ad.title}</Typography>
                         <Typography variant="caption" sx={{ color: '#8892b0' }}>{ad.description?.slice(0, 50)}</Typography>
                       </Box>
                     </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={ad.type || 'image'} 
+                      size="small" 
+                      icon={ad.type === 'video' ? <VideoIcon /> : <ImageIcon />}
+                      sx={{ bgcolor: ad.type === 'video' ? '#1976d2' : '#e94560', color: 'white' }}
+                    />
                   </TableCell>
                   <TableCell>
                     <Chip label={ad.position} size="small" />
@@ -283,33 +369,90 @@ function AdManagement() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
-            <TextField
-              label="Image URL"
-              fullWidth
-              value={form.image}
-              onChange={(e) => setForm({ ...form, image: e.target.value })}
-              placeholder="https://example.com/ad-image.jpg"
-            />
+
+            {/* ✅ FILE UPLOAD SECTION */}
+            <Box sx={{ 
+              border: '2px dashed #ccc', 
+              borderRadius: 2, 
+              p: 3, 
+              textAlign: 'center',
+              bgcolor: '#f9f9f9'
+            }}>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+                id="ad-file-upload"
+                disabled={uploading}
+              />
+              <label htmlFor="ad-file-upload">
+                <Button
+                  component="span"
+                  variant="outlined"
+                  startIcon={<UploadIcon />}
+                  disabled={uploading}
+                  sx={{ borderRadius: 50 }}
+                >
+                  {uploading ? 'Uploading...' : 'Upload Image or Video'}
+                </Button>
+              </label>
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#8892b0' }}>
+                Supports JPG, PNG, GIF, WebP, MP4 (Max 10MB)
+              </Typography>
+              
+              {/* Preview */}
+              {previewUrl && (
+                <Box sx={{ mt: 2 }}>
+                  {form.type === 'video' ? (
+                    <video src={previewUrl} controls style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }} />
+                  ) : (
+                    <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }} />
+                  )}
+                  <Button 
+                    size="small" 
+                    color="error" 
+                    onClick={() => { setPreviewUrl(''); setForm({ ...form, image: '', video_url: '' }); }}
+                    sx={{ mt: 1 }}
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              )}
+            </Box>
+
+            <FormControl fullWidth>
+              <InputLabel>Ad Type</InputLabel>
+              <Select
+                value={form.type || 'image'}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                label="Ad Type"
+              >
+                <MenuItem value="image">Image</MenuItem>
+                <MenuItem value="video">Video</MenuItem>
+              </Select>
+            </FormControl>
+
             <TextField
               label="Link URL"
               fullWidth
               value={form.link}
               onChange={(e) => setForm({ ...form, link: e.target.value })}
-              placeholder="https://hostel.com"
+              placeholder="https://hostel-finder-xi.vercel.app/hostel/7"
             />
-            <TextField
-              select
-              label="Position"
-              fullWidth
-              value={form.position}
-              onChange={(e) => setForm({ ...form, position: e.target.value })}
-              SelectProps={{ native: true }}
-            >
-              <option value="homepage">Homepage</option>
-              <option value="sidebar">Sidebar</option>
-              <option value="search">Search Results</option>
-              <option value="details">Hostel Details</option>
-            </TextField>
+            <FormControl fullWidth>
+              <InputLabel>Position</InputLabel>
+              <Select
+                value={form.position}
+                onChange={(e) => setForm({ ...form, position: e.target.value })}
+                label="Position"
+              >
+                <MenuItem value="homepage">Homepage</MenuItem>
+                <MenuItem value="sidebar">Sidebar</MenuItem>
+                <MenuItem value="search">Search Results</MenuItem>
+                <MenuItem value="details">Hostel Details</MenuItem>
+              </Select>
+            </FormControl>
             <TextField
               label="Price (GH₵/month)"
               type="number"
