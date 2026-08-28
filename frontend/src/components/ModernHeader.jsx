@@ -57,17 +57,19 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
     <Box
       sx={{
         position: 'relative',
-        minHeight: { xs: '30vh', sm: '28vh', md: '25vh' },
+        minHeight: { xs: '35vh', sm: '30vh', md: '25vh' },
         display: 'flex',
         alignItems: 'center',
         background: darkMode
           ? 'linear-gradient(135deg, rgba(10,10,26,0.85) 0%, rgba(26,26,46,0.9) 100%)'
           : 'linear-gradient(135deg, rgba(15,12,41,0.8) 0%, rgba(48,43,99,0.85) 50%, rgba(36,36,62,0.9) 100%)',
         overflow: 'hidden',
-        borderRadius: { xs: '20px', sm: '28px', md: '32px' },
-        mx: { xs: 1.5, sm: 2, md: 3 },
-        mt: { xs: 1, sm: 1.5, md: 2 },
+        // ✅ FULL WIDTH - NO MARGINS
+        borderRadius: 0,
+        mx: 0,
+        mt: 0,
         mb: 0,
+        width: '100%',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -81,7 +83,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           backgroundRepeat: 'no-repeat',
           opacity: 0.25,
           zIndex: 0,
-          borderRadius: { xs: '20px', sm: '28px', md: '32px' }
+          borderRadius: 0
         },
         '&::after': {
           content: '""',
@@ -92,7 +94,7 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           bottom: 0,
           background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 100%)',
           zIndex: 1,
-          borderRadius: { xs: '20px', sm: '28px', md: '32px' }
+          borderRadius: 0
         }
       }}
     >
@@ -144,9 +146,8 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
           </Box>
         </Box>
 
-        {/* ✅ Hero Content - Small & Cute */}
+        {/* Hero Content - Small & Cute */}
         <Box sx={{ maxWidth: '700px', mx: 'auto', textAlign: 'center' }}>
-          {/* Small Tag - Cute */}
           <Typography
             sx={{
               color: 'rgba(255,255,255,0.4)',
@@ -160,7 +161,6 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             ✦ Premium Properties • Trusted Service ✦
           </Typography>
 
-          {/* Main Heading - Compact */}
           <Typography
             sx={{
               fontSize: { xs: '1.5rem', sm: '2.2rem', md: '2.8rem' },
@@ -174,7 +174,6 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             FIND YOUR <span style={{ color: '#e94560' }}>DREAM SPACE</span>
           </Typography>
 
-          {/* Subtitle - Small */}
           <Typography
             sx={{
               color: 'rgba(255,255,255,0.5)',
@@ -188,7 +187,6 @@ function ModernHeader({ user, onMenuClick, darkMode }) {
             Discover the best hostels and homestels in Kumasi
           </Typography>
 
-          {/* Location Badge - Cute */}
           <Box
             sx={{
               display: 'inline-flex',
