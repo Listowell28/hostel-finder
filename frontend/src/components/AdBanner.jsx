@@ -1,5 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Chip } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  Chip,
+  IconButton,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import {
+  PlayArrow as PlayIcon,
+  Pause as PauseIcon,
+  NavigateBefore as PrevIcon,
+  NavigateNext as NextIcon,
+  VolumeUp as VolumeIcon,
+  VolumeOff as MuteIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -7,22 +24,34 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 function AdBanner({ position = 'homepage', darkMode }) {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef(null);
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchAds();
   }, [position]);
 
   useEffect(() => {
-    // Rotate ads every 10 seconds
-    if (ads.length > 1) {
+    // Auto-rotate slides every 8 seconds if not playing video
+    if (ads.length > 1 && isPlaying) {
       const interval = setInterval(() => {
-        setCurrentAdIndex((prev) => (prev + 1) % ads.length);
-      }, 10000);
+        setCurrentIndex((prev) => (prev + 1) % ads.length);
+      }, 8000);
       return () => clearInterval(interval);
     }
-  }, [ads]);
+  }, [ads.length, isPlaying]);
+
+  useEffect(() => {
+    // Play video when it becomes visible
+    if (videoRef.current && ads[currentIndex]?.type === 'video') {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [currentIndex]);
 
   const fetchAds = async () => {
     try {
@@ -36,81 +65,268 @@ function AdBanner({ position = 'homepage', darkMode }) {
     }
   };
 
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % ads.length);
+    setIsPlaying(false);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + ads.length) % ads.length);
+    setIsPlaying(false);
+  };
+
+  const handleAdClick = () => {
+    const ad = ads[currentIndex];
+    if (ad.link) {
+      // Track click
+      fetch(`${API_URL}/api/ads/${ad.id}/click`, { method: 'POST' });
+      window.open(ad.link, '_blank');
+    }
+  };
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+    }
+  };
+
   if (loading || ads.length === 0) {
     return null;
   }
 
-  const ad = ads[currentAdIndex];
+  const ad = ads[currentIndex];
+  const isVideo = ad.type === 'video' || ad.video_url;
 
   return (
     <Paper
-      onClick={() => {
-        if (ad.link) {
-          window.open(ad.link, '_blank');
-          // Track click
-          fetch(`${API_URL}/api/ads/${ad.id}/click`, { method: 'POST' });
-        }
-      }}
       sx={{
         position: 'relative',
-        p: 2,
         borderRadius: 3,
-        cursor: 'pointer',
-        bgcolor: darkMode ? '#1e1e1e' : '#ffffff',
-        border: '1px solid rgba(233,69,96,0.2)',
-        transition: 'all 0.3s ease',
         overflow: 'hidden',
+        bgcolor: darkMode ? '#1e1e1e' : '#ffffff',
+        border: '1px solid rgba(233,69,96,0.15)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+        transition: 'all 0.3s ease',
         '&:hover': {
-          boxShadow: '0 8px 30px rgba(233,69,96,0.15)',
-          transform: 'scale(1.01)'
+          boxShadow: '0 8px 30px rgba(233,69,96,0.15)'
         }
       }}
     >
-      {/* Ad Label */}
+      {/* Sponsored Badge */}
       <Chip
         label="Sponsored"
         size="small"
         sx={{
           position: 'absolute',
-          top: 8,
-          right: 8,
-          bgcolor: 'rgba(0,0,0,0.6)',
+          top: 12,
+          right: 12,
+          bgcolor: 'rgba(0,0,0,0.7)',
           color: 'white',
           fontSize: '0.6rem',
-          zIndex: 1
+          zIndex: 10,
+          backdropFilter: 'blur(4px)'
         }}
       />
 
-      {/* Ad Content */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        {ad.image && (
-          <Box
-            component="img"
+      {/* ✅ Media Content */}
+      <Box
+        onClick={handleAdClick}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: { xs: 160, sm: 180, md: 200 },
+          cursor: 'pointer',
+          overflow: 'hidden',
+          bgcolor: '#000'
+        }}
+      >
+        {isVideo ? (
+          // ✅ Video Player
+          <>
+            <video
+              ref={videoRef}
+              src={ad.video_url || ad.image}
+              poster={ad.poster || ''}
+              muted={isMuted}
+              loop
+              playsInline
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            {/* Video Controls Overlay */}
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 12,
+                left: 12,
+                right: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                zIndex: 5
+              }}
+            >
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                sx={{
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                  width: 32,
+                  height: 32
+                }}
+              >
+                {isPlaying ? <PauseIcon fontSize="small" /> : <PlayIcon fontSize="small" />}
+              </IconButton>
+              
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                sx={{
+                  bgcolor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+                  width: 32,
+                  height: 32
+                }}
+              >
+                {isMuted ? <VolumeOffIcon fontSize="small" /> : <VolumeIcon fontSize="small" />}
+              </IconButton>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'rgba(255,255,255,0.6)',
+                  bgcolor: 'rgba(0,0,0,0.4)',
+                  px: 1,
+                  py: 0.3,
+                  borderRadius: 1,
+                  fontSize: '0.6rem'
+                }}
+              >
+                {isPlaying ? 'Playing' : 'Paused'}
+              </Typography>
+            </Box>
+
+            {/* Video Duration Badge */}
+            <Chip
+              label="📹 Video Ad"
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                bgcolor: 'rgba(0,0,0,0.6)',
+                color: 'white',
+                fontSize: '0.6rem',
+                zIndex: 5
+              }}
+            />
+          </>
+        ) : (
+          // ✅ Image Display
+          <img
             src={ad.image}
             alt={ad.title}
-            sx={{
-              width: { xs: 80, sm: 120 },
-              height: { xs: 80, sm: 120 },
+            style={{
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
-              borderRadius: 2
+              transition: 'transform 0.5s ease'
+            }}
+            onError={(e) => {
+              e.target.src = 'https://placehold.co/800x200/e94560/white?text=Ad';
             }}
           />
         )}
-        
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e' }}>
+
+        {/* Gradient Overlay for Text */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '50%',
+            background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+            pointerEvents: 'none'
+          }}
+        />
+
+        {/* Ad Text Overlay */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            left: 16,
+            right: 16,
+            zIndex: 3,
+            pointerEvents: 'none'
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'white',
+              fontWeight: 700,
+              fontSize: { xs: '0.9rem', sm: '1.1rem' },
+              textShadow: '0 2px 8px rgba(0,0,0,0.5)'
+            }}
+          >
             {ad.title}
           </Typography>
-          <Typography variant="body2" sx={{ color: '#8892b0' }}>
-            {ad.description}
-          </Typography>
+          {ad.description && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                display: '-webkit-box',
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}
+            >
+              {ad.description}
+            </Typography>
+          )}
           <Button
             size="small"
             sx={{
-              mt: 1,
+              mt: 0.5,
               color: '#e94560',
+              bgcolor: 'rgba(255,255,255,0.9)',
+              borderRadius: 50,
+              px: 2,
+              py: 0.3,
+              fontSize: '0.7rem',
+              fontWeight: 600,
               textTransform: 'none',
-              fontWeight: 600
+              pointerEvents: 'auto',
+              '&:hover': { bgcolor: 'white' }
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAdClick();
             }}
           >
             Learn More →
@@ -118,27 +334,72 @@ function AdBanner({ position = 'homepage', darkMode }) {
         </Box>
       </Box>
 
-      {/* Ad Progress Bar */}
+      {/* Navigation Arrows */}
       {ads.length > 1 && (
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 3,
-            bgcolor: 'rgba(233,69,96,0.1)'
-          }}
-        >
+        <>
+          <IconButton
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            sx={{
+              position: 'absolute',
+              left: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 10,
+              bgcolor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+              width: { xs: 28, sm: 36 },
+              height: { xs: 28, sm: 36 }
+            }}
+          >
+            <PrevIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 10,
+              bgcolor: 'rgba(0,0,0,0.5)',
+              color: 'white',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+              width: { xs: 28, sm: 36 },
+              height: { xs: 28, sm: 36 }
+            }}
+          >
+            <NextIcon fontSize="small" />
+          </IconButton>
+
+          {/* Dot Indicators */}
           <Box
             sx={{
-              height: '100%',
-              bgcolor: '#e94560',
-              width: `${((currentAdIndex + 1) / ads.length) * 100}%`,
-              transition: 'width 1s ease'
+              position: 'absolute',
+              bottom: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 10,
+              display: 'flex',
+              gap: 0.5
             }}
-          />
-        </Box>
+          >
+            {ads.map((_, index) => (
+              <Box
+                key={index}
+                onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); setIsPlaying(false); }}
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: index === currentIndex ? '#e94560' : 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+              />
+            ))}
+          </Box>
+        </>
       )}
     </Paper>
   );
