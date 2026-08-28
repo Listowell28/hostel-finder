@@ -1350,7 +1350,7 @@ app.get('/api/premium/hostels', authenticate, async (req, res) => {
 
 // ============ AD FILE UPLOAD ROUTE ============
 const adpath = require('path');
-const fs = require('fs');
+const adfs = require('fs');
 
 // Ensure ad-uploads directory exists
 const adUploadDir = path.join(__dirname, 'uploads', 'ads');
