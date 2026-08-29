@@ -16,7 +16,6 @@ import {
 import {
   Email as EmailIcon,
   Lock as LockIcon,
-  Phone as PhoneIcon,
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -30,7 +29,6 @@ function ForgotPassword() {
 
   const [activeStep, setActiveStep] = useState(0);
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -38,9 +36,8 @@ function ForgotPassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [verificationId, setVerificationId] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
 
-  const steps = ['Verify Email', 'Verify Phone', 'Reset Password'];
+  const steps = ['Enter Email', 'Verify OTP', 'Reset Password'];
 
   // Step 1: Send OTP to email
   const handleSendOTP = async (e) => {
@@ -66,7 +63,7 @@ function ForgotPassword() {
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
 
       setVerificationId(data.verificationId);
-      setSuccess('✅ OTP sent to your email!');
+      setSuccess(`✅ OTP sent to your email: ${email}`);
       setActiveStep(1);
     } catch (err) {
       setError(err.message);
@@ -169,7 +166,7 @@ function ForgotPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
 
-      setSuccess('✅ New OTP sent!');
+      setSuccess('✅ New OTP sent to your email!');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -235,7 +232,7 @@ function ForgotPassword() {
               fontSize: { xs: '1.5rem', sm: '1.8rem' }
             }}
           >
-             Reset Password
+            🔐 Reset Password
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', mt: 0.5 }}>
             We'll help you reset your password
@@ -276,13 +273,7 @@ function ForgotPassword() {
         </Stepper>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && (
-  <Alert severity="success" sx={{ mb: 2 }}>
-    ✅ OTP sent to your email: <strong>{email}</strong>
-    <br />
-    <span style={{ fontSize: '0.8rem' }}>Please check your inbox (and spam folder)</span>
-  </Alert>
-)}
+        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
         {/* Step 1: Email */}
         {activeStep === 0 && (
@@ -309,6 +300,10 @@ function ForgotPassword() {
                 startAdornment: <EmailIcon sx={{ color: 'rgba(255,255,255,0.3)', mr: 1 }} />
               }}
             />
+
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', display: 'block', mb: 2 }}>
+              📧 We'll send a 6-digit code to your email
+            </Typography>
 
             <Button
               type="submit"
