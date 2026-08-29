@@ -13,7 +13,7 @@ import AdManagement from './AdManagement';
 import PremiumManager from './components/PremiumManager';
 import SupportDialog from './components/SupportDialog';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import LiveChat from './components/LiveChat';
+import PullToRefresh from './components/PullToRefresh';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import {
@@ -82,6 +82,7 @@ import Chat from './Chat';
 import HostelDetails from './HostelDetails';
 import LoadingScreen from './components/LoadingScreen';
 import BookingDetails from './BookingDetails';
+import LiveChat from './components/LiveChat';
 import Wishlist from './Wishlist';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -92,7 +93,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BackToHomeButton = () => {
   const locationPath = useLocation();
   const navigate = useNavigate();
-
 
   if (locationPath.pathname === '/') return null;
 
@@ -148,6 +148,9 @@ function HomePage() {
   // ✅ SUPPORT STATE
   const [supportOpen, setSupportOpen] = useState(false);
 
+  // ✅ PULL TO REFRESH STATE
+  const [refreshing, setRefreshing] = useState(false);
+
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -199,6 +202,7 @@ function HomePage() {
 
   const fetchHostels = async () => {
     try {
+      setLoading(true);
       const res = await fetch(`${API_URL}/api/hostels`);
       const data = await res.json();
       setHostels(data);
@@ -304,6 +308,22 @@ function HomePage() {
     }
   };
 
+  // ✅ PULL TO REFRESH HANDLER
+  const handlePullRefresh = async () => {
+    console.log('🔄 Pull to refresh triggered');
+    setRefreshing(true);
+    
+    try {
+      await fetchHostels();
+      // You can also refresh other data here
+      console.log('✅ Refresh complete');
+    } catch (err) {
+      console.error('Refresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // ✅ FILTERED HOSTELS WITH CATEGORY AND PREMIUM SORTING
   const getFilteredHostels = () => {
     let filtered = hostels;
@@ -338,7 +358,7 @@ function HomePage() {
 
   const filteredHostels = getFilteredHostels();
 
- // ============================================
+  // ============================================
 // ✅ HOSTEL CARD - WITH PREMIUM BADGE & WISHLIST
 // ============================================
 const HostelCard = ({ hostel }) => {
@@ -413,7 +433,6 @@ const HostelCard = ({ hostel }) => {
       const data = await res.json();
       setIsWishlisted(data.isWishlisted);
       
-      // Optional: Show feedback
       if (data.isWishlisted) {
         console.log('❤️ Added to wishlist');
       } else {
@@ -540,141 +559,141 @@ const HostelCard = ({ hostel }) => {
           </Box>
         )}
 
-          {/* ✅ WISHLIST BUTTON - Top Right */}
-  <IconButton
-    onClick={toggleWishlist}
-    disabled={wishlistLoading}
-    sx={{
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      zIndex: 10,
-      bgcolor: 'rgba(0,0,0,0.5)',
-      backdropFilter: 'blur(4px)',
-      width: 32,
-      height: 32,
-      '&:hover': {
-        bgcolor: 'rgba(0,0,0,0.7)'
-      }
-    }}
-  >
-    {isWishlisted ? (
-      <FavoriteIcon sx={{ color: '#e94560', fontSize: 18 }} />
-    ) : (
-      <FavoriteBorderIcon sx={{ color: 'white', fontSize: 18 }} />
-    )}
-  </IconButton>
+        {/* ✅ WISHLIST BUTTON - Top Right */}
+        <IconButton
+          onClick={toggleWishlist}
+          disabled={wishlistLoading}
+          sx={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 10,
+            bgcolor: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            width: 32,
+            height: 32,
+            '&:hover': {
+              bgcolor: 'rgba(0,0,0,0.7)'
+            }
+          }}
+        >
+          {isWishlisted ? (
+            <FavoriteIcon sx={{ color: '#e94560', fontSize: 18 }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ color: 'white', fontSize: 18 }} />
+          )}
+        </IconButton>
 
-  {/* ✅ PREMIUM BADGE - Top Left */}
-  {hostel.is_premium && (
-    <Box
-      sx={{
-        position: 'absolute',
-        top: 10,
-        left: 10,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.5,
-        bgcolor: hostel.premium_tier === 'vip' ? '#ffd700' : '#e94560',
-        color: 'white',
-        px: 1.2,
-        py: 0.4,
-        borderRadius: 2,
-        fontSize: '9px',
-        fontWeight: 700,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-        zIndex: 5,
-        letterSpacing: '0.3px'
-      }}
-    >
-      {hostel.premium_tier === 'vip' ? '👑 VIP' : '⭐ Premium'}
-    </Box>
-  )}
+        {/* ✅ PREMIUM BADGE - Top Left */}
+        {hostel.is_premium && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              bgcolor: hostel.premium_tier === 'vip' ? '#ffd700' : '#e94560',
+              color: 'white',
+              px: 1.2,
+              py: 0.4,
+              borderRadius: 2,
+              fontSize: '9px',
+              fontWeight: 700,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              zIndex: 5,
+              letterSpacing: '0.3px'
+            }}
+          >
+            {hostel.premium_tier === 'vip' ? '👑 VIP' : '⭐ Premium'}
+          </Box>
+        )}
 
-  {/* ✅ RATING BADGE - Top Center */}
-  <Box
-    sx={{
-      position: 'absolute',
-      top: 10,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      bgcolor: 'rgba(0,0,0,0.7)',
-      color: '#ffd700',
-      px: 1.5,
-      py: 0.4,
-      borderRadius: 2,
-      fontSize: '11px',
-      fontWeight: 700,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 0.3,
-      backdropFilter: 'blur(4px)',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-      zIndex: 5
-    }}
-  >
-    <StarIcon sx={{ fontSize: 12, color: '#ffd700' }} />
-    {hostel.rating || '4.9'}
-  </Box>
+        {/* ✅ RATING BADGE - Top Center */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bgcolor: 'rgba(0,0,0,0.7)',
+            color: '#ffd700',
+            px: 1.5,
+            py: 0.4,
+            borderRadius: 2,
+            fontSize: '11px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.3,
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            zIndex: 5
+          }}
+        >
+          <StarIcon sx={{ fontSize: 12, color: '#ffd700' }} />
+          {hostel.rating || '4.9'}
+        </Box>
 
-  {/* ✅ PRICE BADGE - Bottom Left */}
-  <Box
-    sx={{
-      position: 'absolute',
-      bottom: 12,
-      left: 12,
-      bgcolor: 'rgba(0,0,0,0.7)',
-      color: 'white',
-      px: 1.5,
-      py: 0.5,
-      borderRadius: 3,
-      fontWeight: 700,
-      fontSize: '13px',
-      backdropFilter: 'blur(8px)',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-      display: 'flex',
-      alignItems: 'baseline',
-      gap: 0.2,
-      zIndex: 5
-    }}
-  >
-    GH₵{hostel.price_per_year || 100}
-    <Typography
-      component="span"
-      sx={{
-        fontSize: '11px',
-        fontWeight: 400,
-        color: 'rgba(255,255,255,0.7)',
-        ml: 0.3
-      }}
-    >
-      /year
-    </Typography>
-  </Box>
+        {/* ✅ PRICE BADGE - Bottom Left */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 12,
+            left: 12,
+            bgcolor: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 3,
+            fontWeight: 700,
+            fontSize: '13px',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 0.2,
+            zIndex: 5
+          }}
+        >
+          GH₵{hostel.price_per_year || 100}
+          <Typography
+            component="span"
+            sx={{
+              fontSize: '11px',
+              fontWeight: 400,
+              color: 'rgba(255,255,255,0.7)',
+              ml: 0.3
+            }}
+          >
+            /year
+          </Typography>
+        </Box>
 
-  {/* ✅ AVAILABILITY BADGE - Bottom Right */}
-  <Box
-    sx={{
-      position: 'absolute',
-      bottom: 12,
-      right: 12,
-      bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.9)' : 'rgba(233,69,96,0.9)',
-      color: 'white',
-      px: 1.2,
-      py: 0.4,
-      borderRadius: 2,
-      fontSize: '9px',
-      fontWeight: 600,
-      backdropFilter: 'blur(4px)',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-      textTransform: 'uppercase',
-      letterSpacing: '0.3px',
-      zIndex: 5
-    }}
-  >
-    {hostel.available !== false ? 'Available' : 'Unavailable'}
-  </Box>
-</Box>
+        {/* ✅ AVAILABILITY BADGE - Bottom Right */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 12,
+            right: 12,
+            bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.9)' : 'rgba(233,69,96,0.9)',
+            color: 'white',
+            px: 1.2,
+            py: 0.4,
+            borderRadius: 2,
+            fontSize: '9px',
+            fontWeight: 600,
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.3px',
+            zIndex: 5
+          }}
+        >
+          {hostel.available !== false ? 'Available' : 'Unavailable'}
+        </Box>
+      </Box>
 
       {/* Content Section */}
       <CardContent sx={{ 
@@ -960,198 +979,308 @@ const HostelCard = ({ hostel }) => {
   }
 
   // ============================================
-  // RENDER - MOBILE VIEW
+  // RENDER - MOBILE VIEW with PULL TO REFRESH
   // ============================================
   if (isMobile) {
     return (
-      <Box sx={{ minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa', pb: 8 }}>
-        {/* ✅ Modern Header */}
-        <ModernHeader 
-          user={user} 
-          onMenuClick={() => setSidebarOpen(true)}
-          darkMode={darkMode}
-        />
-
-        {/* ✅ SEARCH BAR */}
-        <Box sx={{ px: { xs: 2, sm: 3 }, mt: 2 }}>
-          <Paper
-            sx={{
-              p: { xs: 0.8, sm: 1 },
-              borderRadius: '50px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-              bgcolor: darkMode ? '#1e1e1e' : 'white',
-              border: '1px solid rgba(0,0,0,0.04)',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            <TextField
-              fullWidth
-              placeholder="Search hostels, homestels..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              variant="standard"
-              InputProps={{
-                disableUnderline: true,
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#8892b0', fontSize: '20px' }} />
-                  </InputAdornment>
-                ),
-                sx: {
-                  px: 1.5,
-                  py: 0.8,
-                  color: darkMode ? 'white' : '#1a1a2e',
-                  fontSize: '0.9rem'
-                }
-              }}
-            />
-          </Paper>
-        </Box>
-
-        {/* Mobile Sidebar */}
-        <MobileSidebar 
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          user={user}
-          darkMode={darkMode}
-          toggleDarkMode={toggleDarkMode}
-          handleLogout={handleLogout}
-          navigate={navigate}
-        />
-
-        {/* ✅ CATEGORY FILTER */}
-        <CategoryFilter 
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-        />
-
-        {/* ✅ AD BANNER */}
-        <Box sx={{ px: 2, mt: 1 }}>
-          <AdBanner position="homepage" darkMode={darkMode} />
-        </Box>
-
-        {/* ✅ HORIZONTAL SCROLL */}
-        {!loading && filteredHostels.length > 0 && (
-          <HorizontalHostelScroll
-            hostels={filteredHostels.slice(0, 10)}
-            title="Popular Properties"
+      <PullToRefresh onRefresh={handlePullRefresh} loading={refreshing}>
+        <Box sx={{ minHeight: '100vh', bgcolor: darkMode ? '#121212' : '#f5f7fa', pb: 8 }}>
+          {/* ✅ Modern Header */}
+          <ModernHeader 
+            user={user} 
+            onMenuClick={() => setSidebarOpen(true)}
             darkMode={darkMode}
           />
-        )}
 
-        {/* ✅ PROPERTY CARDS */}
-        <Box sx={{ px: 2, mt: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e', mb: 2, fontSize: '1rem' }}>
-            All Properties
-          </Typography>
-          
-          {loading ? (
-            <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>Loading hostels...</Typography>
-          ) : filteredHostels.length === 0 ? (
-            <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>
-              No properties found
-            </Typography>
-          ) : (
-            <Grid container spacing={2}>
-              {filteredHostels.slice(0, 6).map((hostel) => (
-                <Grid item xs={12} key={hostel.id}>
-                  <HostelCard hostel={hostel} />
-                </Grid>
-              ))}
-            </Grid>
+          {/* ✅ SEARCH BAR */}
+          <Box sx={{ px: { xs: 2, sm: 3 }, mt: 2 }}>
+            <Paper
+              sx={{
+                p: { xs: 0.8, sm: 1 },
+                borderRadius: '50px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                bgcolor: darkMode ? '#1e1e1e' : 'white',
+                border: '1px solid rgba(0,0,0,0.04)',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <TextField
+                fullWidth
+                placeholder="Search hostels, homestels..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                variant="standard"
+                InputProps={{
+                  disableUnderline: true,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: '#8892b0', fontSize: '20px' }} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    px: 1.5,
+                    py: 0.8,
+                    color: darkMode ? 'white' : '#1a1a2e',
+                    fontSize: '0.9rem'
+                  }
+                }}
+              />
+            </Paper>
+          </Box>
+
+          {/* Mobile Sidebar */}
+          <MobileSidebar 
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            user={user}
+            darkMode={darkMode}
+            toggleDarkMode={toggleDarkMode}
+            handleLogout={handleLogout}
+            navigate={navigate}
+          />
+
+          {/* ✅ CATEGORY FILTER */}
+          <CategoryFilter 
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+          />
+
+          {/* ✅ AD BANNER */}
+          <Box sx={{ px: 2, mt: 1 }}>
+            <AdBanner position="homepage" darkMode={darkMode} />
+          </Box>
+
+          {/* ✅ HORIZONTAL SCROLL */}
+          {!loading && filteredHostels.length > 0 && (
+            <HorizontalHostelScroll
+              hostels={filteredHostels.slice(0, 10)}
+              title="Popular Properties"
+              darkMode={darkMode}
+            />
           )}
-        </Box>
 
-        {/* ✅ BOTTOM NAVIGATION */}
-        <Paper
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            borderRadius: '28px 28px 0 0',
-            boxShadow: '0 -10px 30px rgba(0,0,0,0.05)',
-            bgcolor: darkMode ? '#1e1e1e' : 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(20px)',
-            borderTop: '1px solid rgba(0,0,0,0.05)',
-            zIndex: 1000
-          }}
-        >
-          <BottomNavigation
-  value={0}
-  onChange={(event, newValue) => {
-    if (newValue === 0) navigate('/');
-    else if (newValue === 1) navigate('/wishlist');  // ← Wishlist
-    else if (newValue === 2) setSupportOpen(true);   // ← Support
-    else if (newValue === 3) navigate('/profile');    // ← Profile
-  }}
-  sx={{ height: 56, bgcolor: 'transparent' }}
->
-  <BottomNavigationAction 
-    label="Home" 
-    icon={<HomeIcon />} 
-    sx={{ color: '#e94560' }} 
-  />
-  <BottomNavigationAction 
-    label="Wishlist" 
-    icon={<FavoriteIcon />} 
-    sx={{ color: '#8892b0' }} 
-  />
-  <BottomNavigationAction 
-    label="Support" 
-    icon={<SupportAgentIcon />} 
-    sx={{ color: '#8892b0' }} 
-  />
-  <BottomNavigationAction 
-    label="Profile" 
-    icon={<PersonIcon />} 
-    sx={{ color: '#8892b0' }} 
-  />
-</BottomNavigation>
-        </Paper>
+          {/* ✅ PROPERTY CARDS */}
+          <Box sx={{ px: 2, mt: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: darkMode ? 'white' : '#1a1a2e', mb: 2, fontSize: '1rem' }}>
+              All Properties
+            </Typography>
+            
+            {loading ? (
+              <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>Loading hostels...</Typography>
+            ) : filteredHostels.length === 0 ? (
+              <Typography sx={{ textAlign: 'center', color: '#8892b0', py: 4 }}>
+                No properties found
+              </Typography>
+            ) : (
+              <Grid container spacing={2}>
+                {filteredHostels.slice(0, 6).map((hostel) => (
+                  <Grid item xs={12} key={hostel.id}>
+                    <HostelCard hostel={hostel} />
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
 
-        <LiveChat user={user} darkMode={darkMode} />
-
-        {/* ✅ SUPPORT DIALOG */}
-        <SupportDialog 
-          open={supportOpen} 
-          onClose={() => setSupportOpen(false)} 
-          darkMode={darkMode}
-        />
-
-        {/* ✅ BOOKING DIALOG */}
-        <Dialog
-          open={!!bookingDialog}
-          onClose={() => {
-            setBookingDialog(null);
-            setSelectedRoom(null);
-            setPhoneNumber('');
-            setRoomType('');
-            setGuests(1);
-            setBookingError('');
-            setBookingSuccess('');
-          }}
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: { xs: 0, sm: 4 },
-              margin: { xs: 0, sm: 2 },
-              maxHeight: '90vh',
+          {/* Bottom Navigation */}
+          <Paper
+            sx={{
               position: 'fixed',
-              bottom: { xs: 0, sm: 'auto' },
-              top: { xs: 'auto', sm: 'auto' },
-              width: '100%'
-            }
-          }}
-        >
-          {/* ... booking dialog content ... */}
-        </Dialog>
+              bottom: 0,
+              left: 0,
+              right: 0,
+              borderRadius: '28px 28px 0 0',
+              boxShadow: '0 -10px 30px rgba(0,0,0,0.05)',
+              bgcolor: darkMode ? '#1e1e1e' : 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(20px)',
+              borderTop: '1px solid rgba(0,0,0,0.05)',
+              zIndex: 1000
+            }}
+          >
+            <BottomNavigation
+              value={0}
+              onChange={(event, newValue) => {
+                if (newValue === 0) navigate('/');
+                else if (newValue === 1) navigate('/wishlist');
+                else if (newValue === 2) setSupportOpen(true);
+                else if (newValue === 3) navigate('/profile');
+              }}
+              sx={{ height: 56, bgcolor: 'transparent' }}
+            >
+              <BottomNavigationAction 
+                label="Home" 
+                icon={<HomeIcon />} 
+                sx={{ color: '#e94560' }} 
+              />
+              <BottomNavigationAction 
+                label="Wishlist" 
+                icon={<FavoriteIcon />} 
+                sx={{ color: '#8892b0' }} 
+              />
+              <BottomNavigationAction 
+                label="Support" 
+                icon={<SupportAgentIcon />} 
+                sx={{ color: '#8892b0' }} 
+              />
+              <BottomNavigationAction 
+                label="Profile" 
+                icon={<PersonIcon />} 
+                sx={{ color: '#8892b0' }} 
+              />
+            </BottomNavigation>
+          </Paper>
 
-        {/* ✅ DEVELOPER INFO */}
-        <DeveloperInfo />
-      </Box>
+          {/* ✅ LIVE CHAT */}
+          <LiveChat user={user} darkMode={darkMode} />
+
+          {/* ✅ SUPPORT DIALOG */}
+          <SupportDialog 
+            open={supportOpen} 
+            onClose={() => setSupportOpen(false)} 
+            darkMode={darkMode}
+          />
+
+          {/* ✅ BOOKING DIALOG - MOBILE */}
+          <Dialog
+            open={!!bookingDialog}
+            onClose={() => {
+              setBookingDialog(null);
+              setSelectedRoom(null);
+              setPhoneNumber('');
+              setRoomType('');
+              setGuests(1);
+              setBookingError('');
+              setBookingSuccess('');
+            }}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+              sx: {
+                borderRadius: { xs: 0, sm: 4 },
+                margin: { xs: 0, sm: 2 },
+                maxHeight: '90vh',
+                position: 'fixed',
+                bottom: { xs: 0, sm: 'auto' },
+                top: { xs: 'auto', sm: 'auto' },
+                width: '100%'
+              }
+            }}
+          >
+            <DialogTitle sx={{ color: '#1a1a2e', fontWeight: 700 }}>
+              Book {bookingDialog?.name}
+            </DialogTitle>
+            
+            <DialogContent>
+              {bookingError && <Alert severity="error" sx={{ mb: 2 }}>{bookingError}</Alert>}
+              {bookingSuccess && <Alert severity="success" sx={{ mb: 2 }}>{bookingSuccess}</Alert>}
+              
+              <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ color: '#8892b0' }}>
+                    Price: GH₵{bookingDialog?.price_per_year}/year
+                  </Typography>
+                  <Chip
+                    label={bookingDialog?.available !== false ? "Available" : "Unavailable"}
+                    color={bookingDialog?.available !== false ? "success" : "error"}
+                    size="small"
+                  />
+                </Box>
+
+                <TextField
+                  label="Phone Number"
+                  type="tel"
+                  fullWidth
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="0244123456"
+                  helperText="Enter your phone number for booking confirmation"
+                  required
+                />
+
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                    Select Room Type
+                  </Typography>
+                  <Grid container spacing={1}>
+                    {['1 in a room', '2 in a room', '3 in a room'].map((type) => (
+                      <Grid item xs={4} key={type}>
+                        <Card
+                          onClick={() => setRoomType(type)}
+                          sx={{
+                            cursor: 'pointer',
+                            border: roomType === type ? '2px solid #e94560' : '1px solid #ddd',
+                            borderRadius: 2,
+                            p: 2,
+                            textAlign: 'center',
+                            transition: 'all 0.3s ease',
+                            bgcolor: roomType === type ? 'rgba(233,69,96,0.05)' : 'white',
+                            '&:hover': {
+                              borderColor: '#e94560',
+                              transform: 'scale(1.02)'
+                            }
+                          }}
+                        >
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
+                            {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                            {type}
+                          </Typography>
+                          {roomType === type && (
+                            <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
+                              Selected
+                            </Typography>
+                          )}
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  {!roomType && (
+                    <Typography variant="caption" sx={{ color: '#e94560', display: 'block', mt: 1 }}>
+                      Please select a room type
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            </DialogContent>
+            
+            <DialogActions sx={{ p: 3, pt: 0 }}>
+              <Button
+                onClick={() => {
+                  setBookingDialog(null);
+                  setSelectedRoom(null);
+                  setPhoneNumber('');
+                  setRoomType('');
+                  setGuests(1);
+                  setBookingError('');
+                  setBookingSuccess('');
+                }}
+                sx={{ color: '#8892b0' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmBooking}
+                disabled={bookingLoading || !phoneNumber || !roomType}
+                sx={{
+                  background: 'linear-gradient(135deg, #e94560, #c73652)',
+                  borderRadius: 50,
+                  px: 4,
+                  fontWeight: 600,
+                  '&:hover': { background: 'linear-gradient(135deg, #c73652, #a82842)' }
+                }}
+              >
+                {bookingLoading ? 'Processing...' : 'Confirm Booking'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* ✅ DEVELOPER INFO */}
+          <DeveloperInfo />
+        </Box>
+      </PullToRefresh>
     );
   }
 
@@ -1213,6 +1342,16 @@ const HostelCard = ({ hostel }) => {
           >
             <ListItemIcon><SupportAgentIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
             <ListItemText primary="Support" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+          </ListItem>
+          
+          {/* ✅ WISHLIST */}
+          <ListItem 
+            button 
+            onClick={() => navigate('/wishlist')} 
+            sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}
+          >
+            <ListItemIcon><FavoriteIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+            <ListItemText primary="Wishlist" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
           </ListItem>
           
           {/* ✅ AD MANAGEMENT */}
@@ -1598,7 +1737,8 @@ const HostelCard = ({ hostel }) => {
       )}
       {chatOpen && user && <Chat currentUser={user} onClose={() => setChatOpen(false)} />}
 
-        <LiveChat user={user} darkMode={darkMode} />
+      {/* ✅ LIVE CHAT */}
+      <LiveChat user={user} darkMode={darkMode} />
 
       <DeveloperInfo />
     </Box>
