@@ -14,6 +14,8 @@ import PremiumManager from './components/PremiumManager';
 import SupportDialog from './components/SupportDialog';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import LiveChat from './components/LiveChat';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import {
   Typography,
   Button,
