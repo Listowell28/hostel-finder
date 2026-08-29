@@ -9,23 +9,13 @@ import {
   Badge,
   Fab,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Chip,
-  CircularProgress,
-  Alert
+  CircularProgress
 } from '@mui/material';
 import {
   Send as SendIcon,
   Chat as ChatIcon,
   Close as CloseIcon,
-  Person as PersonIcon,
-  SupportAgent as SupportAgentIcon,
-  CheckCircle as CheckCircleIcon
+  SupportAgent as SupportAgentIcon
 } from '@mui/icons-material';
 import io from 'socket.io-client';
 
@@ -46,7 +36,6 @@ function LiveChat({ user, darkMode }) {
   const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // Connect to socket
     const newSocket = io(API_URL, {
       transports: ['websocket'],
       query: { userId: user?.id || 'guest' }
@@ -150,32 +139,29 @@ function LiveChat({ user, darkMode }) {
     setIsMinimized(!isMinimized);
   };
 
-  // Get user initial
-  const getInitials = (name) => {
-    return name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
-  };
-
-  // Format time
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <>
-      {/* Chat Button */}
+      {/* ✅ CHAT BUTTON - FIXED POSITION */}
       <Fab
         onClick={handleOpen}
         sx={{
           position: 'fixed',
-          bottom: { xs: 16, sm: 24 },
+          bottom: { xs: 80, sm: 24 },  // ← Mobile: 80px above bottom (above bottom nav)
           right: { xs: 16, sm: 24 },
-          zIndex: 9999,
+          zIndex: 99999,
           bgcolor: '#e94560',
           color: 'white',
           '&:hover': { bgcolor: '#c73652' },
-          width: { xs: 56, sm: 64 },
-          height: { xs: 56, sm: 64 },
-          boxShadow: '0 4px 20px rgba(233,69,96,0.4)'
+          width: { xs: 48, sm: 56 },
+          height: { xs: 48, sm: 56 },
+          boxShadow: '0 4px 20px rgba(233,69,96,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
         <Badge
@@ -186,14 +172,17 @@ function LiveChat({ user, darkMode }) {
             '& .MuiBadge-badge': {
               backgroundColor: '#e94560',
               color: 'white',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              fontSize: '10px',
+              height: 20,
+              minWidth: 20
             }
           }}
         >
           {supportOnline ? (
-            <ChatIcon sx={{ fontSize: { xs: 28, sm: 32 } }} />
+            <ChatIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
           ) : (
-            <SupportAgentIcon sx={{ fontSize: { xs: 28, sm: 32 } }} />
+            <SupportAgentIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
           )}
         </Badge>
       </Fab>
@@ -217,7 +206,8 @@ function LiveChat({ user, darkMode }) {
             borderRadius: { xs: 0, sm: 4 },
             overflow: 'hidden',
             bgcolor: darkMode ? '#1a1a2e' : '#ffffff',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            zIndex: 99998
           }
         }}
       >
