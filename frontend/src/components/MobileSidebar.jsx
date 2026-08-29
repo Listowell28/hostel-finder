@@ -22,6 +22,7 @@ import {
   TrendingUp as TrendingUpIcon  // ← ADD THIS
 } from '@mui/icons-material';
 import LanguageSwitcher from '../languageswitcher';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 
 function MobileSidebar({ 
   open, 
@@ -93,6 +94,15 @@ function MobileSidebar({
           <ListItemIcon><BookOnlineIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
           <ListItemText primary="My Bookings" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
         </ListItem>
+
+        <ListItem 
+          button 
+          onClick={() => { navigate('/wishlist'); onClose(); }} 
+          sx={{ borderRadius: 2, mb: 0.5 }}
+        >
+         <ListItemIcon><FavoriteIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+         <ListItemText primary="Wishlist" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+      </ListItem>
 
         {(user?.role === 'owner' || user?.role === 'admin') && (
           <ListItem 

@@ -80,6 +80,7 @@ import Chat from './Chat';
 import HostelDetails from './HostelDetails';
 import LoadingScreen from './components/LoadingScreen';
 import BookingDetails from './BookingDetails';
+import Wishlist from './Wishlist';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -335,11 +336,15 @@ function HomePage() {
 
   const filteredHostels = getFilteredHostels();
 
-  // ============================================
-// ✅ HOSTEL CARD - WITH PREMIUM BADGE
+ // ============================================
+// ✅ HOSTEL CARD - WITH PREMIUM BADGE & WISHLIST
 // ============================================
 const HostelCard = ({ hostel }) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  
+  // ✅ WISHLIST STATE
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   const getImageUrl = () => {
     if (hostel.images && hostel.images.length > 0) {
@@ -358,6 +363,66 @@ const HostelCard = ({ hostel }) => {
   const roomCount = hostel.rooms?.length || Math.floor(Math.random() * 5) + 1;
   const bathroomCount = Math.floor(roomCount / 2) + 1;
   const sqft = (roomCount * 150) + 50;
+
+  // ✅ CHECK WISHLIST STATUS
+  useEffect(() => {
+    checkWishlistStatus();
+  }, [hostel.id]);
+
+  const checkWishlistStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/wishlist/check/${hostel.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setIsWishlisted(data.isWishlisted);
+    } catch (err) {
+      console.error('Error checking wishlist:', err);
+    }
+  };
+
+  // ✅ TOGGLE WISHLIST
+  const toggleWishlist = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login to save favorites');
+      navigate('/login');
+      return;
+    }
+
+    setWishlistLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/api/wishlist/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ hostelId: hostel.id })
+      });
+
+      const data = await res.json();
+      setIsWishlisted(data.isWishlisted);
+      
+      // Optional: Show feedback
+      if (data.isWishlisted) {
+        console.log('❤️ Added to wishlist');
+      } else {
+        console.log('💔 Removed from wishlist');
+      }
+    } catch (err) {
+      console.error('Error toggling wishlist:', err);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   const handleCardClick = (e) => {
     if (e.target.closest('button')) {
@@ -473,13 +538,38 @@ const HostelCard = ({ hostel }) => {
           </Box>
         )}
 
+        {/* ✅ WISHLIST BUTTON - ADDED HERE */}
+        <IconButton
+          onClick={toggleWishlist}
+          disabled={wishlistLoading}
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 10,
+            bgcolor: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            width: 32,
+            height: 32,
+            '&:hover': {
+              bgcolor: 'rgba(0,0,0,0.7)'
+            }
+          }}
+        >
+          {isWishlisted ? (
+            <FavoriteIcon sx={{ color: '#e94560', fontSize: 18 }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ color: 'white', fontSize: 18 }} />
+          )}
+        </IconButton>
+
         {/* ✅ PREMIUM BADGE */}
         {hostel.is_premium && (
           <Box
             sx={{
               position: 'absolute',
               top: 16,
-              right: 16,
+              left: 16,
               display: 'flex',
               alignItems: 'center',
               gap: 0.5,
@@ -536,7 +626,7 @@ const HostelCard = ({ hostel }) => {
           sx={{
             position: 'absolute',
             top: 16,
-            left: 16,
+            left: 56,  // Moved to make room for wishlist button
             bgcolor: 'rgba(0,0,0,0.7)',
             color: '#ffd700',
             px: 1.5,
@@ -980,18 +1070,36 @@ const HostelCard = ({ hostel }) => {
           }}
         >
           <BottomNavigation
-            value={0}
-            onChange={(event, newValue) => {
-              if (newValue === 0) navigate('/');
-              else if (newValue === 1) setSupportOpen(true);
-              else if (newValue === 2) navigate('/profile');
-            }}
-            sx={{ height: 56, bgcolor: 'transparent' }}
-          >
-            <BottomNavigationAction label="Home" icon={<HomeIcon />} sx={{ color: '#e94560' }} />
-            <BottomNavigationAction label="Support" icon={<SupportAgentIcon />} sx={{ color: '#8892b0' }} />
-            <BottomNavigationAction label="Profile" icon={<PersonIcon />} sx={{ color: '#8892b0' }} />
-          </BottomNavigation>
+  value={0}
+  onChange={(event, newValue) => {
+    if (newValue === 0) navigate('/');
+    else if (newValue === 1) navigate('/wishlist');  // ← Wishlist
+    else if (newValue === 2) setSupportOpen(true);   // ← Support
+    else if (newValue === 3) navigate('/profile');    // ← Profile
+  }}
+  sx={{ height: 56, bgcolor: 'transparent' }}
+>
+  <BottomNavigationAction 
+    label="Home" 
+    icon={<HomeIcon />} 
+    sx={{ color: '#e94560' }} 
+  />
+  <BottomNavigationAction 
+    label="Wishlist" 
+    icon={<FavoriteIcon />} 
+    sx={{ color: '#8892b0' }} 
+  />
+  <BottomNavigationAction 
+    label="Support" 
+    icon={<SupportAgentIcon />} 
+    sx={{ color: '#8892b0' }} 
+  />
+  <BottomNavigationAction 
+    label="Profile" 
+    icon={<PersonIcon />} 
+    sx={{ color: '#8892b0' }} 
+  />
+</BottomNavigation>
         </Paper>
 
         <LiveChat user={user} darkMode={darkMode} />
@@ -1507,6 +1615,7 @@ function MainLayout() {
       <Route path="/booking/:id" element={<BookingDetails />} />
       <Route path="/admin/ads" element={<AdManagement />} />
       <Route path="/premium" element={<PremiumManager />} />
+      <Route path="/wishlist" element={<Wishlist />} />
     </Routes>
   );
 }

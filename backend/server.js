@@ -1624,6 +1624,93 @@ app.get('/api/premium/expiring', authenticate, async (req, res) => {
   }
 });
 
+// ============ WISHLIST ROUTES ============
+
+// Get user's wishlist
+app.get('/api/wishlist', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT h.* 
+       FROM wishlist w
+       JOIN hostels h ON w.hostel_id = h.id
+       WHERE w.user_id = $1
+       ORDER BY w.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching wishlist:', err);
+    res.status(500).json({ error: 'Failed to fetch wishlist' });
+  }
+});
+
+// Check if hostel is in wishlist
+app.get('/api/wishlist/check/:hostelId', authenticate, async (req, res) => {
+  const { hostelId } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT id FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+      [req.user.id, hostelId]
+    );
+    res.json({ isWishlisted: result.rows.length > 0 });
+  } catch (err) {
+    console.error('Error checking wishlist:', err);
+    res.status(500).json({ error: 'Failed to check wishlist' });
+  }
+});
+
+// Toggle wishlist (add/remove)
+app.post('/api/wishlist/toggle', authenticate, async (req, res) => {
+  const { hostelId } = req.body;
+  
+  if (!hostelId) {
+    return res.status(400).json({ error: 'Hostel ID is required' });
+  }
+
+  try {
+    // Check if exists
+    const check = await pool.query(
+      'SELECT id FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+      [req.user.id, hostelId]
+    );
+
+    if (check.rows.length > 0) {
+      // Remove from wishlist
+      await pool.query(
+        'DELETE FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+        [req.user.id, hostelId]
+      );
+      return res.json({ isWishlisted: false, message: 'Removed from wishlist' });
+    } else {
+      // Add to wishlist
+      await pool.query(
+        'INSERT INTO wishlist (user_id, hostel_id) VALUES ($1, $2)',
+        [req.user.id, hostelId]
+      );
+      return res.json({ isWishlisted: true, message: 'Added to wishlist' });
+    }
+  } catch (err) {
+    console.error('Error toggling wishlist:', err);
+    res.status(500).json({ error: 'Failed to toggle wishlist' });
+  }
+});
+
+// Remove from wishlist
+app.post('/api/wishlist/remove', authenticate, async (req, res) => {
+  const { hostelId } = req.body;
+  
+  try {
+    await pool.query(
+      'DELETE FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+      [req.user.id, hostelId]
+    );
+    res.json({ message: 'Removed from wishlist' });
+  } catch (err) {
+    console.error('Error removing from wishlist:', err);
+    res.status(500).json({ error: 'Failed to remove from wishlist' });
+  }
+});
+
 // ============ ROOM MANAGEMENT ROUTES ============
 
 app.get('/api/admin/hostels/:id/rooms', authenticate, async (req, res) => {
