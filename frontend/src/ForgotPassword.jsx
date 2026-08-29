@@ -235,7 +235,7 @@ function ForgotPassword() {
               fontSize: { xs: '1.5rem', sm: '1.8rem' }
             }}
           >
-            🔐 Reset Password
+             Reset Password
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', mt: 0.5 }}>
             We'll help you reset your password
@@ -276,7 +276,13 @@ function ForgotPassword() {
         </Stepper>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        {success && (
+  <Alert severity="success" sx={{ mb: 2 }}>
+    ✅ OTP sent to your email: <strong>{email}</strong>
+    <br />
+    <span style={{ fontSize: '0.8rem' }}>Please check your inbox (and spam folder)</span>
+  </Alert>
+)}
 
         {/* Step 1: Email */}
         {activeStep === 0 && (

@@ -1713,8 +1713,9 @@ app.post('/api/wishlist/remove', authenticate, async (req, res) => {
 
 // ============ FORGOT PASSWORD ROUTES ============
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
-// Store OTPs temporarily (in production, use Redis or database)
+// Store OTPs temporarily
 const otpStore = {};
 
 // Generate 6-digit OTP
@@ -1722,26 +1723,64 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Send OTP via MNotify SMS
-const sendOTPSMS = async (phone, otp) => {
+// ✅ Email transporter setup (using Gmail)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
+// ✅ Send OTP via Email
+const sendOTPEmail = async (email, otp, full_name) => {
   try {
-    const { sendSMS } = require('./mnotify');
-    const message = `Your HostelFinder password reset code is: ${otp}. This code expires in 10 minutes.`;
-    await sendSMS(phone, message);
-    console.log(`✅ OTP sent to ${phone}: ${otp}`);
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: ' HostelFinder - Password Reset OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: white; border-radius: 10px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #e94560; margin: 0;">HostelFinder</h1>
+            <p style="color: #8892b0; margin: 5px 0;">Find Your Perfect Space</p>
+          </div>
+          
+          <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+            <h2 style="color: #e94560; text-align: center;"> Password Reset</h2>
+            <p>Hello ${full_name || 'User'},</p>
+            <p>We received a request to reset your password for your HostelFinder account.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="display: inline-block; background: #e94560; color: white; padding: 15px 40px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 8px;">
+                ${otp}
+              </div>
+              <p style="color: #8892b0; font-size: 12px; margin-top: 10px;">This code expires in 10 minutes</p>
+            </div>
+            
+            <p style="color: #8892b0; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+            
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;" />
+            
+            <p style="color: #8892b0; font-size: 12px; text-align: center;">
+              HostelFinder - Find Your Perfect Space<br />
+              <a href="https://hostel-finder-xi.vercel.app" style="color: #e94560; text-decoration: none;">Visit our website</a>
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Email OTP sent to ${email}`);
+    return true;
   } catch (err) {
-    console.error('❌ Failed to send SMS:', err);
+    console.error('❌ Email error:', err);
+    return false;
   }
 };
 
-// Send OTP via Email (fallback)
-const sendOTPEmail = async (email, otp) => {
-  // You can use nodemailer or any email service here
-  console.log(`📧 OTP for ${email}: ${otp}`);
-  // For now, we'll just log it
-};
-
-// Step 1: Request OTP
+// Step 1: Request OTP (Email Only)
 app.post('/api/auth/forgot-password', async (req, res) => {
   const { email } = req.body;
 
@@ -1752,7 +1791,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     // Check if user exists
     const userResult = await pool.query(
-      'SELECT id, email, phone FROM users WHERE email = $1',
+      'SELECT id, email, full_name, phone FROM users WHERE email = $1',
       [email]
     );
 
@@ -1772,27 +1811,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       attempts: 0
     };
 
-    // Send OTP via SMS (if phone exists) and Email
-    if (user.phone) {
-      await sendOTPSMS(user.phone, otp);
-    }
-    await sendOTPEmail(email, otp);
-
-    // Also send via SMS using your MNotify function
-    try {
-      const { sendSMS } = require('./mnotify');
-      if (user.phone) {
-        await sendSMS(user.phone, `Your HostelFinder password reset code is: ${otp}`);
-        console.log(`✅ SMS sent to ${user.phone}`);
-      }
-    } catch (smsErr) {
-      console.error('SMS error:', smsErr);
-    }
+    // ✅ Send OTP via Email (Only)
+    await sendOTPEmail(email, otp, user.full_name);
 
     res.json({
       success: true,
-      message: 'OTP sent successfully',
-      verificationId: email // Simple approach
+      message: 'OTP sent to your email',
+      verificationId: email
     });
 
   } catch (err) {
@@ -1898,7 +1923,7 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      'SELECT phone FROM users WHERE email = $1',
+      'SELECT full_name FROM users WHERE email = $1',
       [email]
     );
 
@@ -1916,20 +1941,12 @@ app.post('/api/auth/resend-otp', async (req, res) => {
       attempts: 0
     };
 
-    // Send SMS
-    try {
-      const { sendSMS } = require('./mnotify');
-      if (userResult.rows[0].phone) {
-        await sendSMS(userResult.rows[0].phone, `Your new HostelFinder password reset code is: ${otp}`);
-        console.log(`✅ New SMS sent to ${userResult.rows[0].phone}`);
-      }
-    } catch (smsErr) {
-      console.error('SMS error:', smsErr);
-    }
+    // ✅ Send OTP via Email (Only)
+    await sendOTPEmail(email, otp, userResult.rows[0].full_name);
 
     res.json({ 
       success: true, 
-      message: 'New OTP sent successfully' 
+      message: 'New OTP sent to your email' 
     });
 
   } catch (err) {
