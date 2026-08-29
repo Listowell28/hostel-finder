@@ -13,6 +13,7 @@ import AdManagement from './AdManagement';
 import PremiumManager from './components/PremiumManager';
 import SupportDialog from './components/SupportDialog';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import LiveChat from './components/LiveChat';
 import {
   Typography,
   Button,
@@ -88,6 +89,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const BackToHomeButton = () => {
   const locationPath = useLocation();
   const navigate = useNavigate();
+
+  <LiveChat user={user} darkMode={darkMode} />
 
   if (locationPath.pathname === '/') return null;
 

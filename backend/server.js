@@ -1749,10 +1749,12 @@ app.delete('/api/admin/rooms/:id', authenticate, async (req, res) => {
 // ============ SOCKET.IO CHAT ============
 
 const onlineUsers = new Map();
+const supportUsers = new Map();
 
 io.on('connection', (socket) => {
   console.log('🟢 User connected:', socket.id);
 
+  // User join for regular chat
   socket.on('user-join', (userId) => {
     if (userId) {
       const id = parseInt(userId);
@@ -1764,6 +1766,51 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ✅ SUPPORT CHAT
+  socket.on('support-join', (userId) => {
+    if (userId) {
+      supportUsers.set(userId, socket.id);
+      io.emit('support-online-status', true);
+      console.log(`🟢 Support user ${userId} joined`);
+    }
+  });
+
+  socket.on('send-support-message', async (data) => {
+    const { senderId, senderName, message, isSupport } = data;
+    
+    console.log(`💬 Support message from ${senderName}:`, message);
+
+    // Save to database (optional)
+    try {
+      await pool.query(
+        `INSERT INTO support_messages (user_id, sender_name, message, is_support, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [senderId === 'guest' ? null : parseInt(senderId), senderName, message, isSupport || false]
+      );
+    } catch (err) {
+      console.error('Error saving support message:', err);
+    }
+
+    // Broadcast to support team (you can add multiple support agents)
+    io.emit('receive-support-message', {
+      senderId,
+      senderName,
+      message,
+      isSupport: isSupport || false,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  socket.on('support-typing', (data) => {
+    const { senderName, isSupport } = data;
+    io.emit('support-typing', { senderName, isSupport });
+  });
+
+  socket.on('support-stopped-typing', () => {
+    io.emit('support-stopped-typing');
+  });
+
+  // Regular chat messages
   socket.on('send-message', async (data) => {
     const { senderId, receiverId, message, senderName } = data;
     
@@ -1856,6 +1903,14 @@ io.on('connection', (socket) => {
       if (socketId === socket.id) {
         onlineUsers.delete(userId);
         io.emit('online-users', Array.from(onlineUsers.keys()));
+        break;
+      }
+    }
+    
+    for (const [userId, socketId] of supportUsers.entries()) {
+      if (socketId === socket.id) {
+        supportUsers.delete(userId);
+        io.emit('support-online-status', supportUsers.size > 0);
         break;
       }
     }
