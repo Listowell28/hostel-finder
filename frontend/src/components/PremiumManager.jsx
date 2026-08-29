@@ -18,7 +18,9 @@ import {
   Divider,
   LinearProgress,
   useMediaQuery,
-  useTheme
+  useTheme,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import {
   Star as StarIcon,
@@ -26,7 +28,10 @@ import {
   Diamond as DiamondIcon,
   TrendingUp as TrendingUpIcon,
   Payment as PaymentIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  AccessTime as AccessTimeIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -40,6 +45,12 @@ function PremiumManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTier, setSelectedTier] = useState('premium');
   const [processing, setProcessing] = useState(false);
+  const [stats, setStats] = useState({
+    premiumCount: 0,
+    vipCount: 0,
+    revenue: 0,
+    expiredCount: 0
+  });
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const token = localStorage.getItem('token');
@@ -54,6 +65,7 @@ function PremiumManager() {
       return;
     }
     fetchMyHostels();
+    fetchStats();
   }, []);
 
   const fetchMyHostels = async () => {
@@ -71,6 +83,18 @@ function PremiumManager() {
     } catch (err) {
       setError('Failed to fetch hostels');
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/premium/stats`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
     }
   };
 
@@ -103,6 +127,7 @@ function PremiumManager() {
       setSuccess(`✅ Hostel upgraded to ${selectedTier.toUpperCase()}!`);
       setDialogOpen(false);
       fetchMyHostels();
+      fetchStats();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -110,7 +135,18 @@ function PremiumManager() {
     }
   };
 
-  const getBadge = (tier) => {
+  const getBadge = (tier, expiryDate) => {
+    const isExpired = expiryDate && new Date(expiryDate) < new Date();
+    
+    if (isExpired) {
+      return {
+        icon: <WarningIcon sx={{ fontSize: 16, color: '#e94560' }} />,
+        label: 'Expired',
+        color: '#e94560',
+        bgcolor: 'rgba(233,69,96,0.15)'
+      };
+    }
+    
     if (tier === 'vip') {
       return {
         icon: <DiamondIcon sx={{ fontSize: 16, color: '#ffd700' }} />,
@@ -119,6 +155,7 @@ function PremiumManager() {
         bgcolor: 'rgba(255,215,0,0.15)'
       };
     }
+    
     if (tier === 'premium') {
       return {
         icon: <StarIcon sx={{ fontSize: 16, color: '#e94560' }} />,
@@ -127,12 +164,34 @@ function PremiumManager() {
         bgcolor: 'rgba(233,69,96,0.15)'
       };
     }
+    
     return {
       icon: null,
       label: 'Free',
       color: '#8892b0',
       bgcolor: 'transparent'
     };
+  };
+
+  const getExpiryStatus = (expiryDate) => {
+    if (!expiryDate) return { status: 'free', daysLeft: 0, percent: 0 };
+    
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const totalDays = 30;
+    const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+    const daysUsed = totalDays - daysLeft;
+    const percent = Math.min(100, Math.max(0, (daysUsed / totalDays) * 100));
+    
+    if (daysLeft < 0) {
+      return { status: 'expired', daysLeft: 0, percent: 100 };
+    }
+    
+    if (daysLeft <= 7) {
+      return { status: 'expiring-soon', daysLeft, percent };
+    }
+    
+    return { status: 'active', daysLeft, percent };
   };
 
   const getPrice = (tier) => {
@@ -160,158 +219,222 @@ function PremiumManager() {
   return (
     <Box sx={{ p: { xs: 2, md: 4 } }}>
       <Paper sx={{ p: 4, borderRadius: 4 }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-            💎 Premium Listings
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#8892b0' }}>
-            Upgrade your hostels to get featured and attract more bookings
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+              💎 Premium Listings
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#8892b0' }}>
+              Upgrade your hostels to get featured and attract more bookings
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={() => { fetchMyHostels(); fetchStats(); }}
+            sx={{ borderRadius: 50 }}
+          >
+            Refresh
+          </Button>
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
-        {/* Stats */}
+        {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="caption" sx={{ color: '#8892b0' }}>Total Listings</Typography>
-              <Typography variant="h4">{hostels.length}</Typography>
+          <Grid item xs={6} sm={3}>
+            <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#e94560', color: 'white' }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>Premium Listings</Typography>
+              <Typography variant="h4">{stats.premiumCount}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="caption" sx={{ color: '#8892b0' }}>Premium Listings</Typography>
-              <Typography variant="h4">{hostels.filter(h => h.is_premium).length}</Typography>
+          <Grid item xs={6} sm={3}>
+            <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#ffd700', color: '#1a1a2e' }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>VIP Listings</Typography>
+              <Typography variant="h4">{stats.vipCount}</Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="caption" sx={{ color: '#8892b0' }}>VIP Listings</Typography>
-              <Typography variant="h4">{hostels.filter(h => h.premium_tier === 'vip').length}</Typography>
+          <Grid item xs={6} sm={3}>
+            <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#4caf50', color: 'white' }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>Revenue</Typography>
+              <Typography variant="h4">GH₵{stats.revenue}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#e94560', color: 'white' }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>Expired</Typography>
+              <Typography variant="h4">{stats.expiredCount}</Typography>
             </Paper>
           </Grid>
         </Grid>
 
         {/* Hostel List */}
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+          Your Properties
+        </Typography>
+        
         <Grid container spacing={3}>
-          {hostels.map((hostel) => {
-            const badge = getBadge(hostel.premium_tier);
-            const isPremium = hostel.is_premium;
+          {hostels.length === 0 ? (
+            <Grid item xs={12}>
+              <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
+                <Typography sx={{ color: '#8892b0' }}>
+                  You don't have any properties yet.
+                </Typography>
+              </Paper>
+            </Grid>
+          ) : (
+            hostels.map((hostel) => {
+              const badge = getBadge(hostel.premium_tier, hostel.premium_expiry);
+              const isPremium = hostel.is_premium && hostel.premium_expiry && new Date(hostel.premium_expiry) > new Date();
+              const expiryStatus = getExpiryStatus(hostel.premium_expiry);
+              const isExpired = hostel.is_premium && hostel.premium_expiry && new Date(hostel.premium_expiry) < new Date();
 
-            return (
-              <Grid item xs={12} sm={6} md={4} key={hostel.id}>
-                <Card
-                  sx={{
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                    border: isPremium ? `2px solid ${badge.color}` : '1px solid #eee',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 12px 40px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                >
-                  <Box
+              return (
+                <Grid item xs={12} sm={6} md={4} key={hostel.id}>
+                  <Card
                     sx={{
-                      height: 100,
-                      background: isPremium 
-                        ? `linear-gradient(135deg, ${badge.color}22, ${badge.color}44)`
-                        : '#f5f7fa',
-                      p: 2,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start'
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                      border: isPremium ? `2px solid ${badge.color}` : '1px solid #eee',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.1)'
+                      },
+                      opacity: isExpired ? 0.7 : 1
                     }}
                   >
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-                        {hostel.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#8892b0' }}>
-                        {hostel.city}, {hostel.state || 'Ghana'}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      icon={badge.icon}
-                      label={badge.label}
-                      size="small"
+                    <Box
                       sx={{
-                        bgcolor: badge.bgcolor,
-                        color: badge.color,
-                        fontWeight: 600
+                        height: 100,
+                        background: isPremium 
+                          ? `linear-gradient(135deg, ${badge.color}22, ${badge.color}44)`
+                          : '#f5f7fa',
+                        p: 2,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start'
                       }}
-                    />
-                  </Box>
-
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="body2" sx={{ color: '#8892b0' }}>
-                        Price: <strong>GH₵{hostel.price_per_year}/year</strong>
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#8892b0' }}>
-                        {hostel.available !== false ? '🟢 Available' : '🔴 Unavailable'}
-                      </Typography>
-                    </Box>
-
-                    <Divider sx={{ mb: 2 }} />
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    >
                       <Box>
-                        <Typography variant="caption" sx={{ color: '#8892b0' }}>
-                          Current Plan
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+                          {hostel.name}
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: badge.color }}>
-                          {badge.label || 'Free'}
+                        <Typography variant="caption" sx={{ color: '#8892b0' }}>
+                          {hostel.city}, {hostel.state || 'Ghana'}
                         </Typography>
                       </Box>
+                      <Chip
+                        icon={badge.icon}
+                        label={badge.label}
+                        size="small"
+                        sx={{
+                          bgcolor: badge.bgcolor,
+                          color: badge.color,
+                          fontWeight: 600
+                        }}
+                      />
+                    </Box>
 
-                      {isPremium ? (
-                        <Button
-                          variant="outlined"
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="body2" sx={{ color: '#8892b0' }}>
+                          Price: <strong>GH₵{hostel.price_per_year}/year</strong>
+                        </Typography>
+                        <Chip
+                          label={hostel.available !== false ? '🟢 Available' : '🔴 Unavailable'}
                           size="small"
-                          onClick={() => handleUpgrade(hostel)}
-                          sx={{ borderRadius: 50, px: 3 }}
-                        >
-                          Change Plan
-                        </Button>
-                      ) : (
+                          sx={{ fontSize: '0.6rem' }}
+                        />
+                      </Box>
+
+                      {/* ✅ Premium Status and Expiry */}
+                      {isPremium && hostel.premium_expiry && (
+                        <Box sx={{ mb: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: '#8892b0' }}>
+                              {expiryStatus.status === 'expired' ? '⚠️ Expired' :
+                               expiryStatus.status === 'expiring-soon' ? '⏳ Expiring Soon' : '✅ Active'}
+                            </Typography>
+                            <Typography variant="caption" sx={{ 
+                              color: expiryStatus.status === 'expired' ? '#e94560' :
+                                     expiryStatus.status === 'expiring-soon' ? '#ff9800' : '#4caf50',
+                              fontWeight: 600
+                            }}>
+                              {expiryStatus.status === 'expired' ? '0 days' :
+                               `${expiryStatus.daysLeft} days left`}
+                            </Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={expiryStatus.percent}
+                            sx={{
+                              height: 6,
+                              borderRadius: 3,
+                              bgcolor: '#f5f7fa',
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: expiryStatus.status === 'expired' ? '#e94560' :
+                                        expiryStatus.status === 'expiring-soon' ? '#ff9800' : '#4caf50'
+                              }
+                            }}
+                          />
+                          <Typography variant="caption" sx={{ color: '#8892b0', display: 'block', mt: 0.5 }}>
+                            Expires: {new Date(hostel.premium_expiry).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      <Divider sx={{ mb: 2 }} />
+
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: '#8892b0' }}>
+                            Current Plan
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: badge.color }}>
+                            {badge.label || 'Free'}
+                            {isPremium && hostel.premium_expiry && (
+                              <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
+                                {getPrice(hostel.premium_tier)}
+                              </Typography>
+                            )}
+                          </Typography>
+                        </Box>
+
                         <Button
-                          variant="contained"
+                          variant={isPremium ? 'outlined' : 'contained'}
                           size="small"
                           onClick={() => handleUpgrade(hostel)}
                           sx={{
-                            bgcolor: '#e94560',
                             borderRadius: 50,
                             px: 3,
-                            '&:hover': { bgcolor: '#c73652' }
+                            ...(isPremium ? {} : { bgcolor: '#e94560', '&:hover': { bgcolor: '#c73652' } })
                           }}
                         >
-                          Upgrade Now
+                          {isPremium ? 'Manage' : 'Upgrade Now'}
                         </Button>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })
+          )}
         </Grid>
       </Paper>
 
       {/* Upgrade Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-          Upgrade {selectedHostel?.name}
+          {selectedHostel?.is_premium ? 'Change Plan' : 'Upgrade'} {selectedHostel?.name}
         </DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" sx={{ color: '#8892b0', mb: 2 }}>
-              Choose a plan to upgrade your listing
+              Choose a plan to {selectedHostel?.is_premium ? 'change' : 'upgrade'} your listing
             </Typography>
 
             <Grid container spacing={2}>
@@ -349,6 +472,9 @@ function PremiumManager() {
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
                       ✅ Basic analytics
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
+                      ⏳ 30 days active
                     </Typography>
                   </Box>
                 </Card>
@@ -407,14 +533,39 @@ function PremiumManager() {
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
                       ✅ Priority support
                     </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
+                      ⏳ 30 days active
+                    </Typography>
                   </Box>
                 </Card>
               </Grid>
             </Grid>
+
+            {selectedHostel?.is_premium && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 2 }}>
+                <Typography variant="caption" sx={{ color: '#e65100' }}>
+                  ⚠️ Changing plans will reset your 30-day subscription period.
+                </Typography>
+              </Box>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          {selectedHostel?.is_premium && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={async () => {
+                if (confirm('Remove premium from this hostel?')) {
+                  await handleConfirmUpgrade('free');
+                }
+              }}
+              disabled={processing}
+            >
+              Remove Premium
+            </Button>
+          )}
           <Button
             variant="contained"
             onClick={handleConfirmUpgrade}
@@ -426,7 +577,7 @@ function PremiumManager() {
               '&:hover': { bgcolor: '#c73652' }
             }}
           >
-            {processing ? 'Processing...' : 'Confirm Upgrade'}
+            {processing ? 'Processing...' : selectedHostel?.is_premium ? 'Change Plan' : 'Confirm Upgrade'}
           </Button>
         </DialogActions>
       </Dialog>

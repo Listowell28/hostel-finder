@@ -1319,6 +1319,68 @@ app.post('/api/ads/:id/click', async (req, res) => {
 
 // ============ PREMIUM ROUTES ============
 
+// ✅ Check and auto-expire expired subscriptions (run on server start and every hour)
+const checkExpiredPremium = async () => {
+  try {
+    const result = await pool.query(`
+      UPDATE hostels 
+      SET is_premium = false, premium_tier = 'free', premium_expiry = NULL
+      WHERE premium_expiry IS NOT NULL AND premium_expiry < NOW()
+      RETURNING id, name
+    `);
+    
+    if (result.rows.length > 0) {
+      console.log(`✅ Auto-expired ${result.rows.length} premium listings:`, 
+        result.rows.map(h => h.name).join(', ')
+      );
+      
+      // Update subscription status to expired
+      await pool.query(
+        `UPDATE premium_subscriptions 
+         SET status = 'expired' 
+         WHERE end_date < NOW() AND status = 'active'`
+      );
+    }
+  } catch (err) {
+    console.error('❌ Error expiring premium listings:', err);
+  }
+};
+
+// Run on server start
+checkExpiredPremium();
+
+// Run every hour to check for expired subscriptions
+setInterval(checkExpiredPremium, 60 * 60 * 1000);
+
+// ✅ Get premium status with expiry info
+const getPremiumStatus = async (hostelId) => {
+  try {
+    const result = await pool.query(
+      `SELECT is_premium, premium_tier, premium_expiry FROM hostels WHERE id = $1`,
+      [hostelId]
+    );
+    
+    if (result.rows.length === 0) return null;
+    
+    const hostel = result.rows[0];
+    const now = new Date();
+    const expiry = hostel.premium_expiry ? new Date(hostel.premium_expiry) : null;
+    const isActive = hostel.is_premium && expiry && expiry > now;
+    const daysLeft = isActive ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : 0;
+    
+    return {
+      isPremium: isActive,
+      tier: isActive ? hostel.premium_tier : 'free',
+      expiryDate: hostel.premium_expiry,
+      daysLeft: daysLeft
+    };
+  } catch (err) {
+    console.error('Error getting premium status:', err);
+    return null;
+  }
+};
+
+// ✅ Upgrade or downgrade premium
 app.post('/api/premium/upgrade', authenticate, async (req, res) => {
   const { hostelId, tier } = req.body;
 
@@ -1342,6 +1404,7 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    // ✅ If tier is 'free', remove premium
     if (tier === 'free') {
       const result = await pool.query(
         `UPDATE hostels 
@@ -1350,15 +1413,27 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
          RETURNING *`,
         [hostelId]
       );
+      
+      // Update subscription status
+      await pool.query(
+        `UPDATE premium_subscriptions 
+         SET status = 'cancelled' 
+         WHERE hostel_id = $1 AND status = 'active'`,
+        [hostelId]
+      );
+      
       return res.json({
         message: 'Premium removed successfully',
         hostel: result.rows[0]
       });
     }
 
+    // ✅ Calculate expiry date (30 days from now)
+    const startDate = new Date();
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
 
+    // ✅ Update hostel to premium
     const result = await pool.query(
       `UPDATE hostels 
        SET is_premium = true, premium_tier = $1, premium_expiry = $2
@@ -1368,16 +1443,37 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
     );
 
     const price = tier === 'vip' ? 250 : 100;
-    await pool.query(
-      `INSERT INTO premium_subscriptions (hostel_id, tier, price, end_date)
-       VALUES ($1, $2, $3, $4)`,
-      [hostelId, tier, price, expiryDate]
+
+    // ✅ Check if there's an existing active subscription
+    const existingSub = await pool.query(
+      `SELECT id FROM premium_subscriptions 
+       WHERE hostel_id = $1 AND status = 'active'`,
+      [hostelId]
     );
 
-    console.log('✅ Hostel upgraded to:', tier);
+    if (existingSub.rows.length > 0) {
+      // ✅ Update existing subscription
+      await pool.query(
+        `UPDATE premium_subscriptions 
+         SET tier = $1, price = $2, end_date = $3, start_date = $4
+         WHERE id = $5`,
+        [tier, price, expiryDate, startDate, existingSub.rows[0].id]
+      );
+    } else {
+      // ✅ Create new subscription
+      await pool.query(
+        `INSERT INTO premium_subscriptions (hostel_id, tier, price, start_date, end_date, status)
+         VALUES ($1, $2, $3, $4, $5, 'active')`,
+        [hostelId, tier, price, startDate, expiryDate]
+      );
+    }
+
+    console.log('✅ Hostel upgraded to:', tier, 'expires on:', expiryDate);
     res.json({
-      message: `Hostel upgraded to ${tier.toUpperCase()} successfully!`,
-      hostel: result.rows[0]
+      message: `Hostel upgraded to ${tier.toUpperCase()} until ${expiryDate.toLocaleDateString()}!`,
+      hostel: result.rows[0],
+      expiryDate: expiryDate,
+      daysLeft: 30
     });
 
   } catch (err) {
@@ -1386,6 +1482,7 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
   }
 });
 
+// ✅ Get premium stats
 app.get('/api/premium/stats', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1393,21 +1490,25 @@ app.get('/api/premium/stats', authenticate, async (req, res) => {
 
   try {
     const premiumCount = await pool.query(
-      'SELECT COUNT(*) FROM hostels WHERE is_premium = true'
+      'SELECT COUNT(*) FROM hostels WHERE is_premium = true AND premium_expiry > NOW()'
     );
     const vipCount = await pool.query(
-      'SELECT COUNT(*) FROM hostels WHERE premium_tier = $1',
+      'SELECT COUNT(*) FROM hostels WHERE premium_tier = $1 AND premium_expiry > NOW()',
       ['vip']
     );
     const revenue = await pool.query(
       'SELECT COALESCE(SUM(price), 0) FROM premium_subscriptions WHERE status = $1',
       ['active']
     );
+    const expiredCount = await pool.query(
+      'SELECT COUNT(*) FROM hostels WHERE is_premium = true AND premium_expiry < NOW()'
+    );
 
     res.json({
       premiumCount: parseInt(premiumCount.rows[0].count),
       vipCount: parseInt(vipCount.rows[0].count),
-      revenue: parseFloat(revenue.rows[0].sum) || 0
+      revenue: parseFloat(revenue.rows[0].sum) || 0,
+      expiredCount: parseInt(expiredCount.rows[0].count)
     });
   } catch (err) {
     console.error('Error fetching premium stats:', err);
@@ -1415,15 +1516,75 @@ app.get('/api/premium/stats', authenticate, async (req, res) => {
   }
 });
 
+// ✅ Get all premium hostels
 app.get('/api/premium/hostels', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM hostels WHERE is_premium = true ORDER BY premium_tier DESC`
+      `SELECT * FROM hostels 
+       WHERE is_premium = true 
+       ORDER BY premium_tier DESC, premium_expiry ASC`
     );
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching premium hostels:', err);
     res.status(500).json({ error: 'Failed to fetch premium hostels' });
+  }
+});
+
+// ✅ Check premium status for a specific hostel
+app.get('/api/premium/status/:hostelId', authenticate, async (req, res) => {
+  const { hostelId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT is_premium, premium_tier, premium_expiry FROM hostels WHERE id = $1`,
+      [hostelId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Hostel not found' });
+    }
+
+    const hostel = result.rows[0];
+    const now = new Date();
+    const expiry = hostel.premium_expiry ? new Date(hostel.premium_expiry) : null;
+    const isActive = hostel.is_premium && expiry && expiry > now;
+    const daysLeft = isActive ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : 0;
+
+    res.json({
+      isPremium: isActive,
+      tier: isActive ? hostel.premium_tier : 'free',
+      expiryDate: hostel.premium_expiry,
+      daysLeft: daysLeft,
+      isExpired: !isActive && hostel.is_premium
+    });
+
+  } catch (err) {
+    console.error('Error checking premium status:', err);
+    res.status(500).json({ error: 'Failed to check premium status' });
+  }
+});
+
+// ✅ Get expiring premium hostels (for notifications)
+app.get('/api/premium/expiring', authenticate, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT h.*, u.email, u.full_name 
+       FROM hostels h
+       JOIN users u ON h.owner_id = u.id
+       WHERE h.is_premium = true 
+         AND h.premium_expiry IS NOT NULL
+         AND h.premium_expiry BETWEEN NOW() AND NOW() + INTERVAL '7 days'
+       ORDER BY h.premium_expiry ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching expiring premium hostels:', err);
+    res.status(500).json({ error: 'Failed to fetch expiring hostels' });
   }
 });
 
