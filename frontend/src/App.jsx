@@ -540,134 +540,141 @@ const HostelCard = ({ hostel }) => {
           </Box>
         )}
 
-        {/* ✅ WISHLIST BUTTON - ADDED HERE */}
-        <IconButton
-          onClick={toggleWishlist}
-          disabled={wishlistLoading}
-          sx={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 10,
-            bgcolor: 'rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(4px)',
-            width: 32,
-            height: 32,
-            '&:hover': {
-              bgcolor: 'rgba(0,0,0,0.7)'
-            }
-          }}
-        >
-          {isWishlisted ? (
-            <FavoriteIcon sx={{ color: '#e94560', fontSize: 18 }} />
-          ) : (
-            <FavoriteBorderIcon sx={{ color: 'white', fontSize: 18 }} />
-          )}
-        </IconButton>
+          {/* ✅ WISHLIST BUTTON - Top Right */}
+  <IconButton
+    onClick={toggleWishlist}
+    disabled={wishlistLoading}
+    sx={{
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      zIndex: 10,
+      bgcolor: 'rgba(0,0,0,0.5)',
+      backdropFilter: 'blur(4px)',
+      width: 32,
+      height: 32,
+      '&:hover': {
+        bgcolor: 'rgba(0,0,0,0.7)'
+      }
+    }}
+  >
+    {isWishlisted ? (
+      <FavoriteIcon sx={{ color: '#e94560', fontSize: 18 }} />
+    ) : (
+      <FavoriteBorderIcon sx={{ color: 'white', fontSize: 18 }} />
+    )}
+  </IconButton>
 
-        {/* ✅ PREMIUM BADGE */}
-        {hostel.is_premium && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              bgcolor: hostel.premium_tier === 'vip' ? '#ffd700' : '#e94560',
-              color: 'white',
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 2,
-              fontSize: '10px',
-              fontWeight: 700,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-              zIndex: 5,
-              letterSpacing: '0.3px'
-            }}
-          >
-            {hostel.premium_tier === 'vip' ? '👑 VIP' : '⭐ Premium'}
-          </Box>
-        )}
+  {/* ✅ PREMIUM BADGE - Top Left */}
+  {hostel.is_premium && (
+    <Box
+      sx={{
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        bgcolor: hostel.premium_tier === 'vip' ? '#ffd700' : '#e94560',
+        color: 'white',
+        px: 1.2,
+        py: 0.4,
+        borderRadius: 2,
+        fontSize: '9px',
+        fontWeight: 700,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+        zIndex: 5,
+        letterSpacing: '0.3px'
+      }}
+    >
+      {hostel.premium_tier === 'vip' ? '👑 VIP' : '⭐ Premium'}
+    </Box>
+  )}
 
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            left: 16,
-            bgcolor: 'rgba(0,0,0,0.7)',
-            color: 'white',
-            px: 2,
-            py: 1,
-            borderRadius: 4,
-            fontWeight: 700,
-            fontSize: '15px',
-            backdropFilter: 'blur(8px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 0.2
-          }}
-        >
-          GH₵{hostel.price_per_year || 100}
-          <Typography
-            component="span"
-            sx={{
-              fontSize: '15px',
-              fontWeight: 400,
-              color: 'rgba(255,255,255,0.7)',
-              ml: 0.5
-            }}
-          >
-            / year
-          </Typography>
-        </Box>
+  {/* ✅ RATING BADGE - Top Center */}
+  <Box
+    sx={{
+      position: 'absolute',
+      top: 10,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      bgcolor: 'rgba(0,0,0,0.7)',
+      color: '#ffd700',
+      px: 1.5,
+      py: 0.4,
+      borderRadius: 2,
+      fontSize: '11px',
+      fontWeight: 700,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 0.3,
+      backdropFilter: 'blur(4px)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+      zIndex: 5
+    }}
+  >
+    <StarIcon sx={{ fontSize: 12, color: '#ffd700' }} />
+    {hostel.rating || '4.9'}
+  </Box>
 
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            left: 56,  // Moved to make room for wishlist button
-            bgcolor: 'rgba(0,0,0,0.7)',
-            color: '#ffd700',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 2,
-            fontSize: '12px',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            backdropFilter: 'blur(4px)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-          }}
-        >
-          <StarIcon sx={{ fontSize: 14, color: '#ffd700' }} />
-          {hostel.rating || '4.9'}
-        </Box>
+  {/* ✅ PRICE BADGE - Bottom Left */}
+  <Box
+    sx={{
+      position: 'absolute',
+      bottom: 12,
+      left: 12,
+      bgcolor: 'rgba(0,0,0,0.7)',
+      color: 'white',
+      px: 1.5,
+      py: 0.5,
+      borderRadius: 3,
+      fontWeight: 700,
+      fontSize: '13px',
+      backdropFilter: 'blur(8px)',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+      display: 'flex',
+      alignItems: 'baseline',
+      gap: 0.2,
+      zIndex: 5
+    }}
+  >
+    GH₵{hostel.price_per_year || 100}
+    <Typography
+      component="span"
+      sx={{
+        fontSize: '11px',
+        fontWeight: 400,
+        color: 'rgba(255,255,255,0.7)',
+        ml: 0.3
+      }}
+    >
+      /year
+    </Typography>
+  </Box>
 
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.9)' : 'rgba(233,69,96,0.9)',
-            color: 'white',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 2,
-            fontSize: '10px',
-            fontWeight: 600,
-            backdropFilter: 'blur(4px)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-        >
-          {hostel.available !== false ? 'Available' : 'Unavailable'}
-        </Box>
-      </Box>
+  {/* ✅ AVAILABILITY BADGE - Bottom Right */}
+  <Box
+    sx={{
+      position: 'absolute',
+      bottom: 12,
+      right: 12,
+      bgcolor: hostel.available !== false ? 'rgba(76,175,80,0.9)' : 'rgba(233,69,96,0.9)',
+      color: 'white',
+      px: 1.2,
+      py: 0.4,
+      borderRadius: 2,
+      fontSize: '9px',
+      fontWeight: 600,
+      backdropFilter: 'blur(4px)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.3px',
+      zIndex: 5
+    }}
+  >
+    {hostel.available !== false ? 'Available' : 'Unavailable'}
+  </Box>
+</Box>
 
       {/* Content Section */}
       <CardContent sx={{ 
