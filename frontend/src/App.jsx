@@ -90,7 +90,6 @@ const BackToHomeButton = () => {
   const locationPath = useLocation();
   const navigate = useNavigate();
 
-  <LiveChat user={user} darkMode={darkMode} />
 
   if (locationPath.pathname === '/') return null;
 
@@ -995,6 +994,8 @@ const HostelCard = ({ hostel }) => {
           </BottomNavigation>
         </Paper>
 
+        <LiveChat user={user} darkMode={darkMode} />
+
         {/* ✅ SUPPORT DIALOG */}
         <SupportDialog 
           open={supportOpen} 
@@ -1479,6 +1480,8 @@ const HostelCard = ({ hostel }) => {
         </IconButton>
       )}
       {chatOpen && user && <Chat currentUser={user} onClose={() => setChatOpen(false)} />}
+
+        <LiveChat user={user} darkMode={darkMode} />
 
       <DeveloperInfo />
     </Box>
