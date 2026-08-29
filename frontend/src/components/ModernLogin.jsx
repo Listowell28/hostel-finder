@@ -447,8 +447,6 @@ function ModernLogin({ onLogin }) {
           </Button>
         </Box>
 
-        // In your Login.jsx or ModernLogin.jsx, add this:
-
 <Box sx={{ textAlign: 'center', mt: 2 }}>
   <Button
     onClick={() => navigate('/forgot-password')}
