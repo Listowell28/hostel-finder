@@ -1711,6 +1711,233 @@ app.post('/api/wishlist/remove', authenticate, async (req, res) => {
   }
 });
 
+// ============ FORGOT PASSWORD ROUTES ============
+const crypto = require('crypto');
+
+// Store OTPs temporarily (in production, use Redis or database)
+const otpStore = {};
+
+// Generate 6-digit OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Send OTP via MNotify SMS
+const sendOTPSMS = async (phone, otp) => {
+  try {
+    const { sendSMS } = require('./mnotify');
+    const message = `Your HostelFinder password reset code is: ${otp}. This code expires in 10 minutes.`;
+    await sendSMS(phone, message);
+    console.log(`✅ OTP sent to ${phone}: ${otp}`);
+  } catch (err) {
+    console.error('❌ Failed to send SMS:', err);
+  }
+};
+
+// Send OTP via Email (fallback)
+const sendOTPEmail = async (email, otp) => {
+  // You can use nodemailer or any email service here
+  console.log(`📧 OTP for ${email}: ${otp}`);
+  // For now, we'll just log it
+};
+
+// Step 1: Request OTP
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    // Check if user exists
+    const userResult = await pool.query(
+      'SELECT id, email, phone FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No account found with this email' });
+    }
+
+    const user = userResult.rows[0];
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    // Store OTP
+    otpStore[email] = {
+      otp,
+      expiresAt,
+      userId: user.id,
+      attempts: 0
+    };
+
+    // Send OTP via SMS (if phone exists) and Email
+    if (user.phone) {
+      await sendOTPSMS(user.phone, otp);
+    }
+    await sendOTPEmail(email, otp);
+
+    // Also send via SMS using your MNotify function
+    try {
+      const { sendSMS } = require('./mnotify');
+      if (user.phone) {
+        await sendSMS(user.phone, `Your HostelFinder password reset code is: ${otp}`);
+        console.log(`✅ SMS sent to ${user.phone}`);
+      }
+    } catch (smsErr) {
+      console.error('SMS error:', smsErr);
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent successfully',
+      verificationId: email // Simple approach
+    });
+
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Step 2: Verify OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { email, code, verificationId } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and code are required' });
+  }
+
+  try {
+    const stored = otpStore[email];
+    if (!stored) {
+      return res.status(400).json({ error: 'No OTP request found' });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      delete otpStore[email];
+      return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+    }
+
+    if (stored.attempts >= 5) {
+      delete otpStore[email];
+      return res.status(400).json({ error: 'Too many failed attempts. Please request a new OTP.' });
+    }
+
+    if (stored.otp !== code) {
+      stored.attempts += 1;
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    // OTP verified
+    stored.verified = true;
+    res.json({ 
+      success: true, 
+      message: 'OTP verified successfully' 
+    });
+
+  } catch (err) {
+    console.error('Verify OTP error:', err);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
+// Step 3: Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  try {
+    const stored = otpStore[email];
+    if (!stored || !stored.verified) {
+      return res.status(400).json({ error: 'OTP not verified' });
+    }
+
+    if (stored.otp !== code) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in database
+    await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE email = $2',
+      [hashedPassword, email]
+    );
+
+    // Clean up
+    delete otpStore[email];
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Resend OTP
+app.post('/api/auth/resend-otp', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const userResult = await pool.query(
+      'SELECT phone FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No account found' });
+    }
+
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    otpStore[email] = {
+      otp,
+      expiresAt,
+      userId: userResult.rows[0].id,
+      attempts: 0
+    };
+
+    // Send SMS
+    try {
+      const { sendSMS } = require('./mnotify');
+      if (userResult.rows[0].phone) {
+        await sendSMS(userResult.rows[0].phone, `Your new HostelFinder password reset code is: ${otp}`);
+        console.log(`✅ New SMS sent to ${userResult.rows[0].phone}`);
+      }
+    } catch (smsErr) {
+      console.error('SMS error:', smsErr);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'New OTP sent successfully' 
+    });
+
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    res.status(500).json({ error: 'Failed to resend OTP' });
+  }
+});
+
 // ============ ROOM MANAGEMENT ROUTES ============
 
 app.get('/api/admin/hostels/:id/rooms', authenticate, async (req, res) => {

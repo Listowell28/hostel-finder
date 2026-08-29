@@ -16,6 +16,7 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PullToRefresh from './components/PullToRefresh';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import ForgotPassword from './ForgotPassword';
 import {
   Typography,
   Button,
@@ -1765,6 +1766,7 @@ function MainLayout() {
       <Route path="/admin/ads" element={<AdManagement />} />
       <Route path="/premium" element={<PremiumManager />} />
       <Route path="/wishlist" element={<Wishlist />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
     </Routes>
   );
 }

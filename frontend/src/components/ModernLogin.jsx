@@ -447,6 +447,22 @@ function ModernLogin({ onLogin }) {
           </Button>
         </Box>
 
+        // In your Login.jsx or ModernLogin.jsx, add this:
+
+<Box sx={{ textAlign: 'center', mt: 2 }}>
+  <Button
+    onClick={() => navigate('/forgot-password')}
+    sx={{
+      color: 'rgba(255,255,255,0.5)',
+      fontSize: '0.8rem',
+      textTransform: 'none',
+      '&:hover': { color: '#e94560' }
+    }}
+  >
+    Forgot Password?
+  </Button>
+</Box>
+
         {/* Toggle Login/Register */}
         <Box sx={{ textAlign: 'center', mt: 2.5 }}>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)' }}>
