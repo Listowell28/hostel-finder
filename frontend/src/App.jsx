@@ -11,6 +11,8 @@ import AdBanner from './components/AdBanner';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AdManagement from './AdManagement';
 import PremiumManager from './components/PremiumManager';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import SupportDialog from './components/SupportDialog';
 import {
   Typography,
   Button,
@@ -144,7 +146,7 @@ function HomePage() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // ✅ FIXED: Removed extra } here
-
+}
   // ===== MENU STATE =====
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -958,7 +960,7 @@ const HostelCard = ({ hostel }) => {
           )}
         </Box>
 
-        {/* Bottom Navigation */}
+        {/* ✅ Bottom Navigation - UPDATED with Support */}
         <Paper
           sx={{
             position: 'fixed',
@@ -977,16 +979,35 @@ const HostelCard = ({ hostel }) => {
             value={0}
             onChange={(event, newValue) => {
               if (newValue === 0) navigate('/');
-              else if (newValue === 1) navigate('/');
+              else if (newValue === 1) setSupportOpen(true);  // ← Opens Support Dialog
               else if (newValue === 2) navigate('/profile');
             }}
             sx={{ height: 56, bgcolor: 'transparent' }}
           >
-            <BottomNavigationAction label="Home" icon={<HomeIcon />} sx={{ color: '#e94560' }} />
-            <BottomNavigationAction label="Search" icon={<SearchIcon />} sx={{ color: '#8892b0' }} />
-            <BottomNavigationAction label="Profile" icon={<PersonIcon />} sx={{ color: '#8892b0' }} />
+            <BottomNavigationAction 
+              label="Home" 
+              icon={<HomeIcon />} 
+              sx={{ color: '#e94560' }} 
+            />
+            <BottomNavigationAction 
+              label="Support" 
+              icon={<SupportAgentIcon />} 
+              sx={{ color: '#8892b0' }} 
+            />
+            <BottomNavigationAction 
+              label="Profile" 
+              icon={<PersonIcon />} 
+              sx={{ color: '#8892b0' }} 
+            />
           </BottomNavigation>
         </Paper>
+
+        {/* ✅ SUPPORT DIALOG - ADD THIS */}
+        <SupportDialog 
+          open={supportOpen} 
+          onClose={() => setSupportOpen(false)} 
+          darkMode={darkMode}
+        />
 
         {/* ✅ BOOKING DIALOG - MOBILE */}
         <Dialog
@@ -1130,7 +1151,7 @@ const HostelCard = ({ hostel }) => {
     );
   }
 
-  // ============================================
+// ============================================
   // RENDER - DESKTOP VIEW
   // ============================================
   return (
@@ -1162,19 +1183,32 @@ const HostelCard = ({ hostel }) => {
             <ListItemIcon><DashboardIcon sx={{ color: '#e94560' }} /></ListItemIcon>
             <ListItemText primary="Dashboard" sx={{ '& .MuiTypography-root': { color: 'white', fontWeight: 600 } }} />
           </ListItem>
+          
           {(user?.role === 'owner' || user?.role === 'admin') && (
             <ListItem button component={Link} to="/my-properties" sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}>
               <ListItemIcon><HotelIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
               <ListItemText primary="My Properties" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
             </ListItem>
           )}
+          
           <ListItem button component={Link} to="/my-bookings" sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}>
             <ListItemIcon><BookOnlineIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
             <ListItemText primary="My Bookings" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
           </ListItem>
+          
           <ListItem button component={Link} to="/reviews" sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}>
             <ListItemIcon><ReviewsIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
             <ListItemText primary="Reviews" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
+          </ListItem>
+          
+          {/* ✅ SUPPORT - ADDED HERE */}
+          <ListItem 
+            button 
+            onClick={() => setSupportOpen(true)} 
+            sx={{ borderRadius: 2, mb: 1, '&:hover': { bgcolor: 'rgba(233,69,96,0.1)' } }}
+          >
+            <ListItemIcon><SupportAgentIcon sx={{ color: '#8892b0' }} /></ListItemIcon>
+            <ListItemText primary="Support" sx={{ '& .MuiTypography-root': { color: '#8892b0' } }} />
           </ListItem>
           
           {/* ✅ AD MANAGEMENT - ADDED FOR ADMIN */}
@@ -1224,6 +1258,13 @@ const HostelCard = ({ hostel }) => {
           )}
         </Box>
       </Drawer>
+
+      {/* ✅ SUPPORT DIALOG - ADD THIS */}
+      <SupportDialog 
+        open={supportOpen} 
+        onClose={() => setSupportOpen(false)} 
+        darkMode={darkMode}
+      />
 
       {/* Main Content */}
       <Box sx={{ flexGrow: 1, p: 4 }}>
@@ -1556,8 +1597,6 @@ const HostelCard = ({ hostel }) => {
       <DeveloperInfo />
     </Box>
   );  // ← THIS CLOSES THE RETURN STATEMENT
-
-}  // ← THIS CLOSES THE HomePage FUNCTION
 
 // ============================================
 // MAIN LAYOUT

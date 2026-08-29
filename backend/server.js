@@ -1112,6 +1112,42 @@ app.delete('/api/admin/hostels/:id', authenticate, async (req, res) => {
   }
 });
 
+// ============ SUPPORT ROUTE ============
+
+app.post('/api/support', authenticate, async (req, res) => {
+  const { name, email, message } = req.body;
+
+  if (!name || !message) {
+    return res.status(400).json({ error: 'Name and message are required' });
+  }
+
+  try {
+    // Send email notification (optional)
+    // You can use nodemailer, sendgrid, etc.
+    
+    console.log('📧 Support message from:', name);
+    console.log('📧 Email:', email || 'Not provided');
+    console.log('📧 Message:', message);
+    console.log('📧 User ID:', req.user.id);
+    
+    // Save to database (optional)
+    // await pool.query(
+    //   `INSERT INTO support_messages (user_id, name, email, message)
+    //    VALUES ($1, $2, $3, $4)`,
+    //   [req.user.id, name, email, message]
+    // );
+
+    res.json({ 
+      success: true, 
+      message: 'Support message sent successfully' 
+    });
+
+  } catch (err) {
+    console.error('❌ Support error:', err);
+    res.status(500).json({ error: 'Failed to send support message' });
+  }
+});
+
 // ============ ADMIN BOOKING MANAGEMENT ============
 
 app.get('/api/admin/bookings', authenticate, async (req, res) => {
