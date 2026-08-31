@@ -139,13 +139,13 @@ function HomePage() {
               Current Location
             </Typography>
             <Typography variant="h6" className="font-bold flex items-center gap-1">
-              📍 {location}
+               {location}
             </Typography>
           </Box>
           {user ? (
             <Box className="flex items-center gap-2">
               <Typography variant="body2" className="text-blue-200">
-                👋 {user.full_name?.split(' ')[0]}
+                 {user.full_name?.split(' ')[0]}
               </Typography>
               <Button variant="text" size="small" onClick={handleLogout} className="text-white">
                 Logout
@@ -210,10 +210,10 @@ function HomePage() {
                         {hostel.name}
                       </Typography>
                       <Typography variant="body2" className="text-gray-600 text-xs">
-                        📍 {hostel.city}
+                         {hostel.city}
                       </Typography>
                       <Typography variant="body2" className="text-gray-600 text-xs">
-                        💰 ${hostel.price_per_month}/month
+                         ${hostel.price_per_month}/month
                       </Typography>
                       <Typography variant="body2" className="text-gray-500 text-xs mt-1 line-clamp-2">
                         {hostel.description || 'No description available'}
@@ -258,7 +258,7 @@ function HomePage() {
         fullWidth
       >
         <DialogTitle className="text-blue-600 font-bold">
-          📅 Book {bookingDialog?.name}
+           Book {bookingDialog?.name}
         </DialogTitle>
         <DialogContent>
           {bookingError && (
@@ -270,7 +270,7 @@ function HomePage() {
           
           <Box className="mt-2 space-y-4">
             <Typography variant="body2" className="text-gray-600">
-              💰 Price: ${bookingDialog?.price_per_month}/month
+               Price: ${bookingDialog?.price_per_month}/month
             </Typography>
             
             <TextField

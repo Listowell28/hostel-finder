@@ -63,7 +63,7 @@ function ForgotPassword() {
       if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
 
       setVerificationId(data.verificationId);
-      setSuccess(`✅ OTP sent to your email: ${email}`);
+      setSuccess(` OTP sent to your email: ${email}`);
       setActiveStep(1);
     } catch (err) {
       setError(err.message);
@@ -99,7 +99,7 @@ function ForgotPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid OTP');
 
-      setSuccess('✅ OTP verified!');
+      setSuccess(' OTP verified!');
       setActiveStep(2);
     } catch (err) {
       setError(err.message);
@@ -141,7 +141,7 @@ function ForgotPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reset password');
 
-      setSuccess('✅ Password reset successfully!');
+      setSuccess(' Password reset successfully!');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
@@ -166,7 +166,7 @@ function ForgotPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
 
-      setSuccess('✅ New OTP sent to your email!');
+      setSuccess(' New OTP sent to your email!');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -232,7 +232,7 @@ function ForgotPassword() {
               fontSize: { xs: '1.5rem', sm: '1.8rem' }
             }}
           >
-            🔐 Reset Password
+             Reset Password
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', mt: 0.5 }}>
             We'll help you reset your password
@@ -302,7 +302,7 @@ function ForgotPassword() {
             />
 
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', display: 'block', mb: 2 }}>
-              📧 We'll send a 6-digit code to your email
+               We'll send a 6-digit code to your email
             </Typography>
 
             <Button

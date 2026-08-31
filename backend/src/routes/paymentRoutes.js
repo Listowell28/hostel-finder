@@ -99,7 +99,7 @@ router.get('/verify/:reference', auth, async (req, res) => {
     try {
         const { reference } = req.params;
         
-        console.log('🔍 Verifying payment:', reference);
+        console.log(' Verifying payment:', reference);
 
         const response = await axios.get(
             `https://api.paystack.co/transaction/verify/${reference}`,
@@ -147,7 +147,7 @@ router.get('/verify/:reference', auth, async (req, res) => {
         }
 
     } catch (error) {
-        console.error('❌ Payment verification error:', error);
+        console.error(' Payment verification error:', error);
         res.status(500).json({ 
             error: 'Failed to verify payment',
             details: error.message 

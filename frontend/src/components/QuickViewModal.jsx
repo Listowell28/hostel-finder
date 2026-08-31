@@ -73,7 +73,7 @@ function QuickViewModal({ hostel, open, onClose, onBookNow }) {
                   fontWeight: 700
                 }}
               >
-                🔥 Trending
+                 Trending
               </Box>
             )}
           </Box>

@@ -71,7 +71,7 @@ function AddHostel({ onHostelAdded }) {
       category: form.category
     };
 
-    console.log('📤 Sending:', hostelData);
+    console.log(' Sending:', hostelData);
 
     try {
       const res = await fetch(`${API_URL}/api/hostels`, {
@@ -86,7 +86,7 @@ function AddHostel({ onHostelAdded }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to add hostel');
 
-      setSuccess('🎉 Hostel added successfully!');
+      setSuccess(' Hostel added successfully!');
       setForm({
         name: '',
         address: '',
@@ -114,7 +114,7 @@ function AddHostel({ onHostelAdded }) {
         
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-            🏠 Add <span style={{ color: '#e94560' }}>New Hostel</span>
+             Add <span style={{ color: '#e94560' }}>New Hostel</span>
           </Typography>
           <Typography variant="body2" sx={{ color: '#8892b0', mt: 1 }}>
             Fill in the details below to list your hostel
@@ -311,7 +311,7 @@ function AddHostel({ onHostelAdded }) {
                     fontWeight: 600,
                     color: form.available !== false ? '#4caf50' : '#e94560'
                   }}>
-                    {form.available !== false ? '✅ Available' : '❌ Unavailable'}
+                    {form.available !== false ? ' Available' : ' Unavailable'}
                   </Typography>
                   <Switch
                     checked={form.available !== false}
@@ -332,7 +332,7 @@ function AddHostel({ onHostelAdded }) {
             <Grid item xs={12}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1a1a2e', mb: 1 }}>
-                  📸 Hostel Images
+                   Hostel Images
                 </Typography>
                 <ImageUpload
                   onImagesUploaded={handleImagesUploaded}

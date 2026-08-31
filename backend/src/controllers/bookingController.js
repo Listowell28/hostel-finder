@@ -19,8 +19,8 @@ exports.createBooking = async (req, res) => {
         } = req.body;
         const userId = req.userId;  // ✅ Get user ID from request
 
-        console.log('📝 Creating booking for user:', userId);
-        console.log('📋 Data:', { hostel_id, phone_number, room_type, guests });
+        console.log(' Creating booking for user:', userId);
+        console.log(' Data:', { hostel_id, phone_number, room_type, guests });
 
         // ✅ VALIDATIONS
         if (!hostel_id) {
@@ -65,7 +65,7 @@ exports.createBooking = async (req, res) => {
         const totalPrice = pricePerYear * roomMultiplier * guestsCount;
         const pricePerMonth = pricePerYear / 12;
         
-        console.log('💰 Price Calculation:');
+        console.log(' Price Calculation:');
         console.log('  Price per year:', pricePerYear);
         console.log('  Room multiplier:', roomMultiplier);
         console.log('  Guests:', guestsCount);
@@ -86,8 +86,8 @@ exports.createBooking = async (req, res) => {
              today, oneYearLater, totalPrice, pricePerMonth]
         );
 
-        console.log('✅ Booking created with ID:', result.rows[0].id);
-        console.log('💰 Total Price:', totalPrice);
+        console.log(' Booking created with ID:', result.rows[0].id);
+        console.log(' Total Price:', totalPrice);
 
         // ✅ RETURN THE BOOKING (NOT JUST PRICE)
         res.status(201).json({
@@ -104,7 +104,7 @@ exports.createBooking = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Create booking error:', error);
+        console.error(' Create booking error:', error);
         res.status(500).json({ 
             error: 'Failed to create booking',
             details: error.message 
@@ -121,7 +121,7 @@ exports.getMyBookings = async (req, res) => {
     try {
         const userId = req.userId;
         
-        console.log('📋 Fetching bookings for user:', userId);
+        console.log(' Fetching bookings for user:', userId);
 
         const result = await pool.query(`
             SELECT 
@@ -149,11 +149,11 @@ exports.getMyBookings = async (req, res) => {
             ORDER BY b.created_at DESC
         `, [userId]);
 
-        console.log('✅ Found', result.rows.length, 'bookings');
+        console.log(' Found', result.rows.length, 'bookings');
         res.json(result.rows);
 
     } catch (error) {
-        console.error('❌ Get bookings error:', error);
+        console.error(' Get bookings error:', error);
         res.status(500).json({ 
             error: 'Failed to fetch bookings',
             details: error.message 
@@ -171,7 +171,7 @@ exports.getBookingById = async (req, res) => {
         const { id } = req.params;
         const userId = req.userId;
 
-        console.log('📋 Fetching booking ID:', id, 'for user:', userId);
+        console.log(' Fetching booking ID:', id, 'for user:', userId);
 
         const result = await pool.query(`
             SELECT 
@@ -189,11 +189,11 @@ exports.getBookingById = async (req, res) => {
             return res.status(404).json({ error: 'Booking not found' });
         }
 
-        console.log('✅ Booking found:', result.rows[0].id);
+        console.log(' Booking found:', result.rows[0].id);
         res.json(result.rows[0]);
 
     } catch (error) {
-        console.error('❌ Get booking error:', error);
+        console.error(' Get booking error:', error);
         res.status(500).json({ 
             error: 'Failed to fetch booking',
             details: error.message 
@@ -236,7 +236,7 @@ exports.cancelBooking = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Cancel booking error:', error);
+        console.error(' Cancel booking error:', error);
         res.status(500).json({ error: 'Failed to cancel booking' });
     }
 };
@@ -268,7 +268,7 @@ exports.deleteBooking = async (req, res) => {
         res.json({ message: 'Booking deleted successfully' });
 
     } catch (error) {
-        console.error('❌ Delete booking error:', error);
+        console.error(' Delete booking error:', error);
         res.status(500).json({ error: 'Failed to delete booking' });
     }
 };

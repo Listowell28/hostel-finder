@@ -44,7 +44,7 @@ function LiveChat({ user, darkMode }) {
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('🟢 Connected to chat support');
+      console.log(' Connected to chat support');
       setIsConnected(true);
       if (user) {
         newSocket.emit('user-join', user.id);
@@ -52,7 +52,7 @@ function LiveChat({ user, darkMode }) {
     });
 
     newSocket.on('disconnect', () => {
-      console.log('🔴 Disconnected from chat support');
+      console.log(' Disconnected from chat support');
       setIsConnected(false);
     });
 
@@ -229,7 +229,7 @@ function LiveChat({ user, darkMode }) {
             </Avatar>
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                {supportOnline ? '💬 Live Support' : 'Support Team'}
+                {supportOnline ? ' Live Support' : 'Support Team'}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Box

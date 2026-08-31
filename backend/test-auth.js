@@ -9,5 +9,5 @@ const token = jwt.sign(
     { expiresIn: '7d' }
 );
 
-console.log('🔑 Generated token:', token);
-console.log('✅ Auth middleware loaded successfully!');
+console.log(' Generated token:', token);
+console.log(' Auth middleware loaded successfully!');

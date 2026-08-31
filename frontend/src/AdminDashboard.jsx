@@ -69,7 +69,7 @@ function AdminDashboard() {
 
       setLoading(false);
     } catch (err) {
-      console.error('❌ Dashboard error:', err);
+      console.error(' Dashboard error:', err);
       setError(err.message);
       setLoading(false);
     }
@@ -170,7 +170,7 @@ function AdminDashboard() {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
         <Paper sx={{ p: 6, borderRadius: 4 }}>
-          <Typography variant="h5" sx={{ color: '#e94560', fontWeight: 700 }}>⛔ Admin Access Required</Typography>
+          <Typography variant="h5" sx={{ color: '#e94560', fontWeight: 700 }}> Admin Access Required</Typography>
           <Typography variant="body1" sx={{ color: '#8892b0', mt: 2 }}>You need admin privileges to view this page.</Typography>
         </Paper>
       </Box>
@@ -238,10 +238,10 @@ function AdminDashboard() {
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} sx={{ '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 }, '& .Mui-selected': { color: '#e94560' }, '& .MuiTabs-indicator': { backgroundColor: '#e94560' } }}>
-            <Tab label={`👥 Users (${users.length})`} />
-            <Tab label={`🏠 Hostels (${hostels.length})`} />
-            <Tab label={`📅 Bookings (${bookings.length})`} />
-            <Tab label={`🛏️ Rooms`} />
+            <Tab label={` Users (${users.length})`} />
+            <Tab label={` Hostels (${hostels.length})`} />
+            <Tab label={` Bookings (${bookings.length})`} />
+            <Tab label={` Rooms`} />
           </Tabs>
         </Box>
 

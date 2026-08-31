@@ -64,7 +64,7 @@ function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) 
     }
 
     try {
-      console.log('📤 Uploading to:', `${API_URL}/api/upload/multiple`);
+      console.log(' Uploading to:', `${API_URL}/api/upload/multiple`);
       
       const response = await fetch(`${API_URL}/api/upload/multiple`, {
         method: 'POST',
@@ -80,7 +80,7 @@ function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) 
         throw new Error(data.error || 'Upload failed');
       }
 
-      console.log('✅ Upload response:', data);
+      console.log(' Upload response:', data);
 
       // ✅ Get image URLs from response
       const imageUrls = data.imageUrls || data.images?.map(img => img.url) || [];
@@ -89,7 +89,7 @@ function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) 
         throw new Error('No images returned from server');
       }
 
-      console.log('📸 Image URLs:', imageUrls);
+      console.log(' Image URLs:', imageUrls);
 
       const newImages = [...images, ...imageUrls];
       setImages(newImages);
@@ -104,7 +104,7 @@ function ImageUpload({ onImagesUploaded, existingImages = [], maxImages = 10 }) 
       }
 
     } catch (err) {
-      console.error('❌ Upload error:', err);
+      console.error(' Upload error:', err);
       setError(err.message || 'Upload failed');
     } finally {
       setUploading(false);

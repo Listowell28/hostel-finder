@@ -124,7 +124,7 @@ function PremiumManager() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to upgrade');
 
-      setSuccess(`✅ Hostel upgraded to ${selectedTier.toUpperCase()}!`);
+      setSuccess(` Hostel upgraded to ${selectedTier.toUpperCase()}!`);
       setDialogOpen(false);
       fetchMyHostels();
       fetchStats();
@@ -222,7 +222,7 @@ function PremiumManager() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-              💎 Premium Listings
+               Premium Listings
             </Typography>
             <Typography variant="body2" sx={{ color: '#8892b0' }}>
               Upgrade your hostels to get featured and attract more bookings
@@ -343,7 +343,7 @@ function PremiumManager() {
                           Price: <strong>GH₵{hostel.price_per_year}/year</strong>
                         </Typography>
                         <Chip
-                          label={hostel.available !== false ? '🟢 Available' : '🔴 Unavailable'}
+                          label={hostel.available !== false ? ' Available' : ' Unavailable'}
                           size="small"
                           sx={{ fontSize: '0.6rem' }}
                         />
@@ -465,16 +465,16 @@ function PremiumManager() {
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ Featured on homepage
+                       Featured on homepage
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ Premium badge
+                       Premium badge
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ Basic analytics
+                       Basic analytics
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ⏳ 30 days active
+                       30 days active
                     </Typography>
                   </Box>
                 </Card>
@@ -522,19 +522,19 @@ function PremiumManager() {
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ Top featured placement
+                       Top featured placement
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ VIP badge
+                       VIP badge
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ Advanced analytics
+                       Advanced analytics
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ✅ Priority support
+                       Priority support
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', color: '#6b7a8f' }}>
-                      ⏳ 30 days active
+                       30 days active
                     </Typography>
                   </Box>
                 </Card>
@@ -544,7 +544,7 @@ function PremiumManager() {
             {selectedHostel?.is_premium && (
               <Box sx={{ mt: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 2 }}>
                 <Typography variant="caption" sx={{ color: '#e65100' }}>
-                  ⚠️ Changing plans will reset your 30-day subscription period.
+                   Changing plans will reset your 30-day subscription period.
                 </Typography>
               </Box>
             )}

@@ -12,13 +12,13 @@ function SocialCallback() {
     const token = params.get('token');
     const userParam = params.get('user');
 
-    console.log('🔑 Token:', token ? 'Present' : 'Missing');
-    console.log('👤 User:', userParam ? 'Present' : 'Missing');
+    console.log(' Token:', token ? 'Present' : 'Missing');
+    console.log(' User:', userParam ? 'Present' : 'Missing');
 
     if (token && userParam) {
       try {
         const user = JSON.parse(decodeURIComponent(userParam));
-        console.log('✅ User data:', user);
+        console.log(' User data:', user);
         
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));

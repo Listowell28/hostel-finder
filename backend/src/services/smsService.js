@@ -13,12 +13,12 @@ class SmsService {
             // Format phone number to Ghana format
             const formattedPhone = this.formatPhoneNumber(phoneNumber);
             
-            console.log(`📱 Sending SMS to: ${formattedPhone}`);
-            console.log(`📝 Message: ${message.substring(0, 50)}...`);
+            console.log(` Sending SMS to: ${formattedPhone}`);
+            console.log(` Message: ${message.substring(0, 50)}...`);
 
             // Check if API key exists
             if (!this.apiKey) {
-                console.log('⚠️ MNOTIFY_API_KEY not set in .env');
+                console.log(' MNOTIFY_API_KEY not set in .env');
                 return { success: false, error: 'API key not configured' };
             }
 
@@ -38,10 +38,10 @@ class SmsService {
                 }
             );
 
-            console.log('✅ SMS sent successfully:', response.data);
+            console.log(' SMS sent successfully:', response.data);
             return { success: true, data: response.data };
         } catch (error) {
-            console.error('❌ SMS Error:', error.response?.data || error.message);
+            console.error(' SMS Error:', error.response?.data || error.message);
             return { success: false, error: error.message };
         }
     }

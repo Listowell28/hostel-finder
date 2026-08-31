@@ -54,8 +54,8 @@ function MyBookings() {
     }
 
     try {
-      console.log('📊 Fetching bookings...');
-      console.log('🔑 Token:', token ? 'Present' : 'Missing');
+      console.log(' Fetching bookings...');
+      console.log(' Token:', token ? 'Present' : 'Missing');
 
       const res = await fetch(`${API_URL}/api/my-bookings`, {
         headers: { 
@@ -73,11 +73,11 @@ function MyBookings() {
       }
 
       const data = await res.json();
-      console.log('📊 Bookings received:', data);
+      console.log(' Bookings received:', data);
       setBookings(data);
       setLoading(false);
     } catch (err) {
-      console.error('❌ Error fetching bookings:', err);
+      console.error(' Error fetching bookings:', err);
       setError(err.message);
       setLoading(false);
     }
@@ -212,7 +212,7 @@ function MyBookings() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-              📅 My <span style={{ color: '#e94560' }}>Bookings</span>
+               My <span style={{ color: '#e94560' }}>Bookings</span>
             </Typography>
             <Typography variant="body2" sx={{ color: '#8892b0' }}>
               {bookings.length} booking{bookings.length !== 1 ? 's' : ''} found
@@ -229,7 +229,7 @@ function MyBookings() {
         {bookings.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a2e', mb: 2 }}>
-              🏠 No Bookings Yet
+               No Bookings Yet
             </Typography>
             <Typography variant="body1" sx={{ color: '#8892b0', mb: 4 }}>
               You haven't made any bookings yet. Browse hostels and book your stay!
@@ -245,7 +245,7 @@ function MyBookings() {
                 '&:hover': { bgcolor: '#c73652' }
               }}
             >
-              🏠 Browse Hostels
+               Browse Hostels
             </Button>
           </Box>
         ) : (
@@ -440,7 +440,7 @@ function MyBookings() {
 
       {/* ✅ PAYMENT DIALOG */}
       <Dialog open={!!paymentDialog} onClose={() => setPaymentDialog(null)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>💳 Complete Payment</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}> Complete Payment</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" sx={{ mb: 2 }}>

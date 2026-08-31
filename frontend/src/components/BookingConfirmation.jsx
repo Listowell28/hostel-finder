@@ -32,13 +32,13 @@ function BookingConfirmation({ booking, hostel, onClose }) {
             <div className="p-8 text-center">
                 <CheckCircle className="text-green-500 text-6xl mb-4" />
                 <Typography variant="h5" className="mb-2">
-                    Booking Confirmed! 🎉
+                    Booking Confirmed! 
                 </Typography>
                 <Typography className="text-gray-600 mb-4">
                     Your booking has been confirmed. An SMS has been sent to your phone.
                 </Typography>
                 <Typography className="text-sm text-gray-500">
-                    📱 Check your phone for confirmation
+                     Check your phone for confirmation
                 </Typography>
                 <Button
                     variant="outlined"

@@ -377,10 +377,10 @@ app.post('/api/hostels', authenticate, async (req, res) => {
       ]
     );
     
-    console.log('✅ Hostel created:', result.rows[0].name, 'Category:', result.rows[0].category);
+    console.log(' Hostel created:', result.rows[0].name, 'Category:', result.rows[0].category);
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('❌ Error creating hostel:', err);
+    console.error(' Error creating hostel:', err);
     res.status(500).json({ error: 'Failed to create hostel' });
   }
 });
@@ -390,8 +390,8 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   
-  console.log('🔄 Updating hostel ID:', id);
-  console.log('📦 Fields to update:', Object.keys(updates));
+  console.log(' Updating hostel ID:', id);
+  console.log(' Fields to update:', Object.keys(updates));
   
   try {
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
@@ -458,8 +458,8 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
     values.push(id);
     const query = `UPDATE hostels SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
     
-    console.log('📝 Query:', query);
-    console.log('📊 Values:', values);
+    console.log(' Query:', query);
+    console.log(' Values:', values);
 
     const result = await pool.query(query, values);
     
@@ -467,13 +467,13 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Hostel not found' });
     }
     
-    console.log('✅ Hostel updated:', result.rows[0].name, 'Category:', result.rows[0].category);
+    console.log(' Hostel updated:', result.rows[0].name, 'Category:', result.rows[0].category);
     res.json({ 
       message: 'Hostel updated successfully', 
       hostel: result.rows[0] 
     });
   } catch (err) {
-    console.error('❌ Error updating hostel:', err);
+    console.error(' Error updating hostel:', err);
     res.status(500).json({ error: 'Failed to update hostel' });
   }
 });
@@ -566,7 +566,7 @@ app.put('/api/users/profile', authenticate, async (req, res) => {
 // Get user's bookings
 app.get('/api/my-bookings', authenticate, async (req, res) => {
   try {
-    console.log('📊 Fetching bookings for user:', req.user.id);
+    console.log(' Fetching bookings for user:', req.user.id);
     
     const result = await pool.query(
       `SELECT bookings.*, 
@@ -581,10 +581,10 @@ app.get('/api/my-bookings', authenticate, async (req, res) => {
       [req.user.id]
     );
     
-    console.log('📊 Bookings found:', result.rows.length);
+    console.log(' Bookings found:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
-    console.error('❌ Error fetching bookings:', err);
+    console.error(' Error fetching bookings:', err);
     res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 });
@@ -827,7 +827,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
   try {
     uploadMultiple(req, res, async function(err) {
       if (err) {
-        console.error('❌ Multer error:', err);
+        console.error(' Multer error:', err);
         return res.status(400).json({ error: err.message || 'Upload failed' });
       }
 
@@ -835,7 +835,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
         return res.status(400).json({ error: 'No images uploaded' });
       }
 
-      console.log(`📸 Uploading ${req.files.length} images to Supabase...`);
+      console.log(` Uploading ${req.files.length} images to Supabase...`);
 
       const uploadedImages = [];
       for (const file of req.files) {
@@ -845,9 +845,9 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
             url: publicUrl,
             filename: file.originalname
           });
-          console.log(`✅ Uploaded: ${file.originalname} -> ${publicUrl}`);
+          console.log(` Uploaded: ${file.originalname} -> ${publicUrl}`);
         } catch (uploadError) {
-          console.error('❌ Upload to Supabase failed:', uploadError);
+          console.error(' Upload to Supabase failed:', uploadError);
         }
       }
 
@@ -857,7 +857,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
 
       const imageUrls = uploadedImages.map(img => img.url);
       
-      console.log(`✅ Successfully uploaded ${imageUrls.length} images`);
+      console.log(` Successfully uploaded ${imageUrls.length} images`);
       
       res.status(200).json({
         success: true,
@@ -867,7 +867,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
       });
     });
   } catch (err) {
-    console.error('❌ Upload error:', err);
+    console.error(' Upload error:', err);
     res.status(500).json({ error: err.message || 'Upload failed' });
   }
 });
@@ -894,7 +894,7 @@ app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, re
     });
 
   } catch (err) {
-    console.error('❌ Ad upload error:', err);
+    console.error(' Ad upload error:', err);
     res.status(500).json({ error: 'Failed to upload file' });
   }
 });
@@ -1125,10 +1125,10 @@ app.post('/api/support', authenticate, async (req, res) => {
     // Send email notification (optional)
     // You can use nodemailer, sendgrid, etc.
     
-    console.log('📧 Support message from:', name);
-    console.log('📧 Email:', email || 'Not provided');
-    console.log('📧 Message:', message);
-    console.log('📧 User ID:', req.user.id);
+    console.log(' Support message from:', name);
+    console.log(' Email:', email || 'Not provided');
+    console.log(' Message:', message);
+    console.log(' User ID:', req.user.id);
     
     // Save to database (optional)
     // await pool.query(
@@ -1143,7 +1143,7 @@ app.post('/api/support', authenticate, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('❌ Support error:', err);
+    console.error(' Support error:', err);
     res.status(500).json({ error: 'Failed to send support message' });
   }
 });
@@ -1209,10 +1209,10 @@ app.put('/api/admin/bookings/:id/status', authenticate, async (req, res) => {
       [booking.user_id]
     );
 
-    console.log('📱 Booking Status Update:');
-    console.log('📱 Booking ID:', booking.id);
-    console.log('📱 New Status:', booking.status);
-    console.log('📱 User Phone:', userResult.rows[0]?.phone || 'No phone found');
+    console.log(' Booking Status Update:');
+    console.log(' Booking ID:', booking.id);
+    console.log(' New Status:', booking.status);
+    console.log(' User Phone:', userResult.rows[0]?.phone || 'No phone found');
 
     if (userResult.rows.length > 0 && userResult.rows[0].phone) {
       const bookingData = {
@@ -1224,26 +1224,26 @@ app.put('/api/admin/bookings/:id/status', authenticate, async (req, res) => {
       };
 
       if (booking.status === 'confirmed') {
-        console.log('📱 Sending CONFIRMATION SMS to:', userResult.rows[0].phone);
+        console.log(' Sending CONFIRMATION SMS to:', userResult.rows[0].phone);
         try {
           await sendUserBookingConfirmation(userResult.rows[0].phone, bookingData);
-          console.log('✅ Confirmation SMS sent successfully');
+          console.log(' Confirmation SMS sent successfully');
         } catch (err) {
-          console.error('❌ Failed to send confirmation SMS:', err);
+          console.error(' Failed to send confirmation SMS:', err);
         }
       }
 
       if (booking.status === 'cancelled') {
-        console.log('📱 Sending CANCELLATION SMS to:', userResult.rows[0].phone);
+        console.log(' Sending CANCELLATION SMS to:', userResult.rows[0].phone);
         try {
           await sendUserBookingCancellation(userResult.rows[0].phone, bookingData);
-          console.log('✅ Cancellation SMS sent successfully');
+          console.log(' Cancellation SMS sent successfully');
         } catch (err) {
-          console.error('❌ Failed to send cancellation SMS:', err);
+          console.error(' Failed to send cancellation SMS:', err);
         }
       }
     } else {
-      console.log('❌ User phone number not found in database');
+      console.log(' User phone number not found in database');
     }
 
     res.json({
@@ -1366,7 +1366,7 @@ const checkExpiredPremium = async () => {
     `);
     
     if (result.rows.length > 0) {
-      console.log(`✅ Auto-expired ${result.rows.length} premium listings:`, 
+      console.log(` Auto-expired ${result.rows.length} premium listings:`, 
         result.rows.map(h => h.name).join(', ')
       );
       
@@ -1378,7 +1378,7 @@ const checkExpiredPremium = async () => {
       );
     }
   } catch (err) {
-    console.error('❌ Error expiring premium listings:', err);
+    console.error(' Error expiring premium listings:', err);
   }
 };
 
@@ -1420,7 +1420,7 @@ const getPremiumStatus = async (hostelId) => {
 app.post('/api/premium/upgrade', authenticate, async (req, res) => {
   const { hostelId, tier } = req.body;
 
-  console.log('📤 Premium upgrade request:', { hostelId, tier });
+  console.log(' Premium upgrade request:', { hostelId, tier });
 
   if (!hostelId || !tier) {
     return res.status(400).json({ error: 'Hostel ID and tier are required' });
@@ -1513,7 +1513,7 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('❌ Premium upgrade error:', err);
+    console.error(' Premium upgrade error:', err);
     res.status(500).json({ error: 'Failed to upgrade hostel: ' + err.message });
   }
 });
@@ -1772,10 +1772,10 @@ const sendOTPEmail = async (email, otp, full_name) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Email OTP sent to ${email}`);
+    console.log(` Email OTP sent to ${email}`);
     return true;
   } catch (err) {
-    console.error('❌ Email error:', err);
+    console.error(' Email error:', err);
     return false;
   }
 };
@@ -2083,7 +2083,7 @@ const onlineUsers = new Map();
 const supportUsers = new Map();
 
 io.on('connection', (socket) => {
-  console.log('🟢 User connected:', socket.id);
+  console.log(' User connected:', socket.id);
 
   // User join for regular chat
   socket.on('user-join', (userId) => {
@@ -2092,7 +2092,7 @@ io.on('connection', (socket) => {
       if (!isNaN(id)) {
         onlineUsers.set(id, socket.id);
         io.emit('online-users', Array.from(onlineUsers.keys()));
-        console.log(`👤 User ${id} is online`);
+        console.log(` User ${id} is online`);
       }
     }
   });
@@ -2102,14 +2102,14 @@ io.on('connection', (socket) => {
     if (userId) {
       supportUsers.set(userId, socket.id);
       io.emit('support-online-status', true);
-      console.log(`🟢 Support user ${userId} joined`);
+      console.log(` Support user ${userId} joined`);
     }
   });
 
   socket.on('send-support-message', async (data) => {
     const { senderId, senderName, message, isSupport } = data;
     
-    console.log(`💬 Support message from ${senderName}:`, message);
+    console.log(` Support message from ${senderName}:`, message);
 
     // Save to database (optional)
     try {
@@ -2146,7 +2146,7 @@ io.on('connection', (socket) => {
     const { senderId, receiverId, message, senderName } = data;
     
     if (!senderId || !receiverId || !message) {
-      console.log('❌ Missing fields');
+      console.log(' Missing fields');
       return;
     }
 
@@ -2154,7 +2154,7 @@ io.on('connection', (socket) => {
     const receiver = parseInt(receiverId);
     
     if (isNaN(sender) || isNaN(receiver)) {
-      console.log('❌ Invalid IDs');
+      console.log(' Invalid IDs');
       return;
     }
 
@@ -2245,7 +2245,7 @@ io.on('connection', (socket) => {
         break;
       }
     }
-    console.log('🔴 User disconnected');
+    console.log(' User disconnected');
   });
 });
 

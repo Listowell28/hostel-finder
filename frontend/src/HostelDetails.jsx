@@ -224,11 +224,11 @@ function HostelDetails() {
       if (!updateRes.ok) throw new Error('Failed to update hostel');
 
       setHostel(updatedHostel);
-      alert('✅ Images uploaded successfully!');
+      alert(' Images uploaded successfully!');
 
     } catch (err) {
       setUploadError(err.message);
-      alert('❌ Upload failed: ' + err.message);
+      alert(' Upload failed: ' + err.message);
     } finally {
       setUploadingImages(false);
       event.target.value = '';
@@ -392,7 +392,7 @@ function HostelDetails() {
 
         {/* Rooms Section */}
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          🛏️ Available Rooms
+           Available Rooms
         </Typography>
 
         {loadingRooms ? (
@@ -466,7 +466,7 @@ function HostelDetails() {
 
         {/* ✅ IMAGE GALLERY WITH UPLOAD BUTTON */}
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          📸 Hostel Images
+           Hostel Images
         </Typography>
         
         <Box sx={{ mb: 3 }}>
@@ -686,7 +686,7 @@ function HostelDetails() {
                       }}
                     >
                       <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
-                        {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+                        {type === '1 in a room' ? '' : type === '2 in a room' ? '' : ''}
                       </Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>
                         {type}

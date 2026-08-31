@@ -25,7 +25,7 @@ function LanguageSwitcher() {
   };
 
   const changeLanguage = (langCode) => {
-    console.log('🔄 Changing language to:', langCode);
+    console.log(' Changing language to:', langCode);
     i18n.changeLanguage(langCode);
     localStorage.setItem('language', langCode);
     handleClose();

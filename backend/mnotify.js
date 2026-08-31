@@ -21,7 +21,7 @@ async function sendSMS(phoneNumber, message) {
     console.log('✅ SMS sent to:', formattedPhone);
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('❌ SMS error:', error.response?.data || error.message);
+    console.error(' SMS error:', error.response?.data || error.message);
     return { success: false, error: error.message };
   }
 }
@@ -30,7 +30,7 @@ async function sendSMS(phoneNumber, message) {
 async function sendAdminBookingNotification(bookingData) {
   const { hostel_name, user_name, check_in_date, check_out_date, total_price } = bookingData;
   
-  const message = `🔔 NEW BOOKING ALERT!\n\n🏠 Hostel: ${hostel_name}\n👤 Guest: ${user_name}\n📅 Check-in: ${new Date(check_in_date).toLocaleDateString()}\n📅 Check-out: ${new Date(check_out_date).toLocaleDateString()}\n💰 Total: GH₵${total_price}\n\nStatus: Pending Confirmation`;
+  const message = ` NEW BOOKING ALERT!\n\n Hostel: ${hostel_name}\n Guest: ${user_name}\n Check-in: ${new Date(check_in_date).toLocaleDateString()}\n Check-out: ${new Date(check_out_date).toLocaleDateString()}\n Total: GH₵${total_price}\n\nStatus: Pending Confirmation`;
 
   return await sendSMS(process.env.ADMIN_PHONE_NUMBER, message);
 }
@@ -39,7 +39,7 @@ async function sendAdminBookingNotification(bookingData) {
 async function sendUserBookingConfirmation(userPhone, bookingData) {
   const { hostel_name, check_in_date, check_out_date, total_price } = bookingData;
   
-  const message = `✅ BOOKING CONFIRMED! 🎉\n\n🏠 Hostel: ${hostel_name}\n📅 Check-in: ${new Date(check_in_date).toLocaleDateString()}\n📅 Check-out: ${new Date(check_out_date).toLocaleDateString()}\n💰 Total: GH₵${total_price}\n\nThank you for choosing Hostel Finder!`;
+  const message = ` BOOKING CONFIRMED! \n\n Hostel: ${hostel_name}\n Check-in: ${new Date(check_in_date).toLocaleDateString()}\n Check-out: ${new Date(check_out_date).toLocaleDateString()}\n Total: GH₵${total_price}\n\nThank you for choosing Hostel Finder!`;
 
   return await sendSMS(userPhone, message);
 }
@@ -48,7 +48,7 @@ async function sendUserBookingConfirmation(userPhone, bookingData) {
 async function sendUserBookingCancellation(userPhone, bookingData) {
   const { hostel_name, check_in_date, check_out_date } = bookingData;
   
-  const message = `❌ BOOKING CANCELLED\n\n🏠 Hostel: ${hostel_name}\n📅 Check-in: ${new Date(check_in_date).toLocaleDateString()}\n📅 Check-out: ${new Date(check_out_date).toLocaleDateString()}\n\nYour booking has been cancelled. If this was a mistake, please contact us.`;
+  const message = ` BOOKING CANCELLED\n\n Hostel: ${hostel_name}\n Check-in: ${new Date(check_in_date).toLocaleDateString()}\n Check-out: ${new Date(check_out_date).toLocaleDateString()}\n\nYour booking has been cancelled. If this was a mistake, please contact us.`;
 
   return await sendSMS(userPhone, message);
 }

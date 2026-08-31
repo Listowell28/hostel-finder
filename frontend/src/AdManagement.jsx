@@ -142,7 +142,7 @@ function AdManagement() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-      console.log('✅ Upload response:', data);
+      console.log(' Upload response:', data);
 
       // ✅ Build full URL for preview
       const fileUrl = data.url.startsWith('http') 
@@ -168,7 +168,7 @@ function AdManagement() {
         setPreviewUrl(fileUrl);
       }
 
-      setSuccess('✅ File uploaded successfully!');
+      setSuccess(' File uploaded successfully!');
 
     } catch (err) {
       setError(err.message);
@@ -199,7 +199,7 @@ function AdManagement() {
         type: form.type || 'image'
       };
 
-      console.log('📤 Sending ad data:', adData);
+      console.log(' Sending ad data:', adData);
 
       const res = await fetch(url, {
         method,
@@ -289,7 +289,7 @@ function AdManagement() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-              📢 Ad Management
+               Ad Management
             </Typography>
             <Typography variant="body2" sx={{ color: '#8892b0' }}>
               Manage advertisements on your site
@@ -504,7 +504,7 @@ function AdManagement() {
                       alt="Preview" 
                       style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
                       onError={(e) => {
-                        console.error('❌ Image preview error:', e);
+                        console.error(' Image preview error:', e);
                         e.target.src = 'https://placehold.co/400x200/e94560/white?text=Error+Loading';
                       }}
                     />

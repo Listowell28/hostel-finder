@@ -82,7 +82,7 @@ function PaystackPayment({
 
       if (data.success) {
         if (onSuccess) onSuccess(data);
-        alert('✅ Payment successful! Your booking is confirmed.');
+        alert(' Payment successful! Your booking is confirmed.');
       } else {
         setError(data.message || 'Payment verification failed');
       }
@@ -111,7 +111,7 @@ function PaystackPayment({
     <Dialog open={true} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          💳 Complete Payment
+           Complete Payment
         </Typography>
       </DialogTitle>
 

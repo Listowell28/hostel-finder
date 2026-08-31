@@ -14,7 +14,7 @@ router.post('/', auth, async (req, res) => {
         const { hostel_id, phone_number, room_type, guests } = req.body;
         const userId = req.userId;
 
-        console.log('📝 Creating booking for user:', userId);
+        console.log(' Creating booking for user:', userId);
 
         // Validations
         if (!hostel_id) {
@@ -76,10 +76,10 @@ router.post('/', auth, async (req, res) => {
             if (adminPhone) {
                 const adminMessage = SmsTemplates.adminNotification(booking, user, hostelData);
                 await smsService.sendSms(adminPhone, adminMessage);
-                console.log('✅ Admin SMS sent:', adminPhone);
+                console.log('Admin SMS sent:', adminPhone);
             }
         } catch (smsError) {
-            console.log('⚠️ SMS Error:', smsError.message);
+            console.log(' SMS Error:', smsError.message);
         }
 
         res.status(201).json({ 
@@ -89,7 +89,7 @@ router.post('/', auth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         res.status(500).json({ error: 'Failed to create booking' });
     }
 });
@@ -110,7 +110,7 @@ router.get('/my-bookings', auth, async (req, res) => {
         );
         res.json(result.rows);
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         res.status(500).json({ error: 'Failed to fetch bookings' });
     }
 });
@@ -134,7 +134,7 @@ router.get('/:id', auth, async (req, res) => {
         }
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         res.status(500).json({ error: 'Failed to fetch booking' });
     }
 });
@@ -155,7 +155,7 @@ router.put('/:id/cancel', auth, async (req, res) => {
         }
         res.json({ success: true, booking: result.rows[0] });
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         res.status(500).json({ error: 'Failed to cancel booking' });
     }
 });
@@ -213,10 +213,10 @@ router.put('/:id/confirm', auth, async (req, res) => {
             if (user.phone) {
                 const userMessage = SmsTemplates.bookingConfirmation(booking, hostel, user);
                 await smsService.sendSms(user.phone, userMessage);
-                console.log('✅ User SMS sent:', user.phone);
+                console.log(' User SMS sent:', user.phone);
             }
         } catch (smsError) {
-            console.log('⚠️ SMS Error:', smsError.message);
+            console.log(' SMS Error:', smsError.message);
         }
 
         res.json({ 
@@ -226,7 +226,7 @@ router.put('/:id/confirm', auth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error(' Error:', error.message);
         res.status(500).json({ error: 'Failed to confirm booking' });
     }
 });

@@ -95,7 +95,7 @@ function AdminSMS() {
             </Card>
 
             <div className="mt-4 bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-semibold">📊 SMS Statistics</h4>
+                <h4 className="font-semibold"> SMS Statistics</h4>
                 <div className="grid grid-cols-3 gap-4 mt-2">
                     <div>Total Sent: 1,234</div>
                     <div>Delivered: 1,200</div>

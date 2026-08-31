@@ -195,7 +195,7 @@ function RoomManager({ hostelId, hostelName }) {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-          🛏️ Rooms for {hostelName}
+           Rooms for {hostelName}
         </Typography>
         <Button
           variant="contained"
@@ -303,7 +303,7 @@ function RoomManager({ hostelId, hostelName }) {
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-          {editingRoom ? '✏️ Edit Room' : '➕ Add New Room'}
+          {editingRoom ? ' Edit Room' : ' Add New Room'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>

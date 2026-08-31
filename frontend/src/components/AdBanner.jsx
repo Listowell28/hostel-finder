@@ -196,7 +196,7 @@ function AdBanner({ position = 'homepage', darkMode }) {
               onClick={(e) => e.stopPropagation()}
               onEnded={handleVideoEnd}
               onError={(e) => {
-                console.error('❌ Video error:', e);
+                console.error(' Video error:', e);
                 // Fallback to image if video fails
               }}
             />
@@ -283,7 +283,7 @@ function AdBanner({ position = 'homepage', darkMode }) {
 
             {/* Video Duration Badge */}
             <Chip
-              label="📹 Video Ad"
+              label=" Video Ad"
               size="small"
               sx={{
                 position: 'absolute',

@@ -296,7 +296,7 @@ function HorizontalHostelScroll({ hostels, title, darkMode }) {
                       mb: 1
                     }}
                   >
-                    📍 {hostel.city || 'Kumasi'}
+                     {hostel.city || 'Kumasi'}
                   </Typography>
 
                   {/* Amenities - Small */}

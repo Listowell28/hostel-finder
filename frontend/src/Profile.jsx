@@ -394,9 +394,9 @@ function Profile() {
           </Typography>
           <Typography variant="body2" sx={{ color: formData.phone ? '#2e7d32' : '#e65100', mt: 0.5 }}>
             {formData.phone ? (
-              <>✅ You will receive SMS notifications on <strong>{formData.phone}</strong></>
+              <> You will receive SMS notifications on <strong>{formData.phone}</strong></>
             ) : (
-              <>⚠️ Add your phone number to receive booking confirmations and updates via SMS</>
+              <> Add your phone number to receive booking confirmations and updates via SMS</>
             )}
           </Typography>
           {!formData.phone && (
@@ -432,7 +432,7 @@ function Profile() {
           <Grid item xs={12} sm={4}>
             <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', textAlign: 'center', p: 2 }}>
               <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f3460' }}>
-                📅
+                
               </Typography>
               <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
                 Member Since
@@ -446,7 +446,7 @@ function Profile() {
           <Grid item xs={12} sm={4}>
             <Card sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', textAlign: 'center', p: 2 }}>
               <Typography variant="h4" sx={{ fontWeight: 700, color: '#f9a825' }}>
-                ⭐
+                
               </Typography>
               <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
                 Reviews Given

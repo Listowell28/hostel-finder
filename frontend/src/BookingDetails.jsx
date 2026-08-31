@@ -39,7 +39,7 @@ function BookingDetails() {
     }
 
     try {
-      console.log(`📡 Fetching booking ${id}...`);
+      console.log(` Fetching booking ${id}...`);
       
       const res = await fetch(`${API_URL}/api/bookings/${id}`, {
         headers: { 
@@ -48,7 +48,7 @@ function BookingDetails() {
         }
       });
       
-      console.log('📡 Response status:', res.status);
+      console.log(' Response status:', res.status);
       
       if (!res.ok) {
         if (res.status === 404) {
@@ -61,11 +61,11 @@ function BookingDetails() {
       }
       
       const data = await res.json();
-      console.log('✅ Booking data:', data);
+      console.log(' Booking data:', data);
       setBooking(data);
       setLoading(false);
     } catch (err) {
-      console.error('❌ Error:', err.message);
+      console.error(' Error:', err.message);
       setError(err.message);
       setLoading(false);
     }
@@ -265,7 +265,7 @@ function BookingDetails() {
                 Payment Status
               </Typography>
               <Chip
-                label={booking.payment_status === 'paid' ? 'Paid ✅' : 'Pending ⏳'}
+                label={booking.payment_status === 'paid' ? 'Paid ' : 'Pending '}
                 color={booking.payment_status === 'paid' ? 'success' : 'warning'}
                 sx={{ mt: 0.5, fontWeight: 600 }}
               />

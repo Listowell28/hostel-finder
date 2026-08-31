@@ -234,7 +234,7 @@ function HomePage() {
   };
 
   const handleBookNow = (hostel) => {
-    console.log('📖 Book Now clicked for:', hostel.name);
+    console.log(' Book Now clicked for:', hostel.name);
     setBookingDialog(hostel);
     setPhoneNumber('');
     setRoomType('');
@@ -311,13 +311,13 @@ function HomePage() {
 
   // ✅ PULL TO REFRESH HANDLER
   const handlePullRefresh = async () => {
-    console.log('🔄 Pull to refresh triggered');
+    console.log(' Pull to refresh triggered');
     setRefreshing(true);
     
     try {
       await fetchHostels();
       // You can also refresh other data here
-      console.log('✅ Refresh complete');
+      console.log(' Refresh complete');
     } catch (err) {
       console.error('Refresh error:', err);
     } finally {
@@ -456,7 +456,7 @@ const HostelCard = ({ hostel }) => {
   const onBookNow = (e) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('🔄 Book Now clicked for:', hostel.name);
+    console.log(' Book Now clicked for:', hostel.name);
     if (hostel.available !== false) {
       handleBookNow(hostel);
     } else {
@@ -607,7 +607,7 @@ const HostelCard = ({ hostel }) => {
               letterSpacing: '0.3px'
             }}
           >
-            {hostel.premium_tier === 'vip' ? '👑 VIP' : '⭐ Premium'}
+            {hostel.premium_tier === 'vip' ? ' VIP' : ' Premium'}
           </Box>
         )}
 
@@ -1223,7 +1223,7 @@ const HostelCard = ({ hostel }) => {
                           }}
                         >
                           <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
-                            {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+                            {type === '1 in a room' ? '' : type === '2 in a room' ? '' : ''}
                           </Typography>
                           <Typography variant="caption" sx={{ fontWeight: 600 }}>
                             {type}
@@ -1655,7 +1655,7 @@ const HostelCard = ({ hostel }) => {
                       }}
                     >
                       <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
-                        {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
+                        {type === '1 in a room' ? '' : type === '2 in a room' ? '' : ''}
                       </Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>
                         {type}

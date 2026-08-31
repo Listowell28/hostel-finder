@@ -151,7 +151,7 @@ function PullToRefresh({ children, onRefresh, loading }) {
                 fontSize: '12px'
               }}
             >
-              {isRefreshing ? '🔄 Updating...' : pullOffset > 80 ? '✅ Release to refresh' : '⬇️ Pull to refresh'}
+              {isRefreshing ? ' Updating...' : pullOffset > 80 ? ' Release to refresh' : '⬇ Pull to refresh'}
             </Typography>
           </Box>
         </Box>

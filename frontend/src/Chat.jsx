@@ -61,7 +61,7 @@ function Chat({ currentUser, onClose }) {
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Connected to chat server');
+      console.log(' Connected to chat server');
       newSocket.emit('user-join', currentUser.id);
     });
 

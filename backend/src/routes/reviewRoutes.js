@@ -10,7 +10,7 @@ require('dotenv').config();
 // ✅ GET ALL REVIEWS
 // ============================================
 router.get('/all', async (req, res) => {
-    console.log('📊 GET /all - Fetching all reviews');
+    console.log(' GET /all - Fetching all reviews');
     try {
         const result = await pool.query(`
             SELECT 
@@ -28,10 +28,10 @@ router.get('/all', async (req, res) => {
             ORDER BY r.created_at DESC
         `);
         
-        console.log(`✅ Found ${result.rows.length} reviews`);
+        console.log(` Found ${result.rows.length} reviews`);
         res.json(result.rows);
     } catch (error) {
-        console.error('❌ Error in /all:', error.message);
+        console.error(' Error in /all:', error.message);
         res.status(500).json({ 
             error: 'Failed to fetch reviews',
             details: error.message 
@@ -43,7 +43,7 @@ router.get('/all', async (req, res) => {
 // ✅ GET REVIEWS FOR A HOSTEL
 // ============================================
 router.get('/hostel/:hostelId', async (req, res) => {
-    console.log('📊 GET /hostel/:id - Fetching reviews for hostel:', req.params.hostelId);
+    console.log(' GET /hostel/:id - Fetching reviews for hostel:', req.params.hostelId);
     try {
         const { hostelId } = req.params;
         
@@ -68,10 +68,10 @@ router.get('/hostel/:hostelId', async (req, res) => {
             ORDER BY r.created_at DESC
         `, [hostelIdInt]);
         
-        console.log(`✅ Found ${result.rows.length} reviews for hostel ${hostelId}`);
+        console.log(` Found ${result.rows.length} reviews for hostel ${hostelId}`);
         res.json(result.rows);
     } catch (error) {
-        console.error('❌ Error in /hostel/:id:', error.message);
+        console.error(' Error in /hostel/:id:', error.message);
         res.status(500).json({ 
             error: 'Failed to fetch reviews',
             details: error.message 
@@ -83,7 +83,7 @@ router.get('/hostel/:hostelId', async (req, res) => {
 // ✅ CREATE REVIEW - FIXED
 // ============================================
 router.post('/', async (req, res) => {
-    console.log('📝 POST / - Creating new review');
+    console.log(' POST / - Creating new review');
     try {
         const { hostel_id, rating, comment } = req.body;
         
@@ -145,7 +145,7 @@ router.post('/', async (req, res) => {
             [userId, hostelIdInt, ratingInt, comment.trim()]
         );
 
-        console.log(`✅ Review created with ID: ${result.rows[0].id}`);
+        console.log(` Review created with ID: ${result.rows[0].id}`);
 
         // ✅ Get user name for response
         const userResult = await pool.query(
@@ -165,7 +165,7 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error creating review:', error.message);
+        console.error(' Error creating review:', error.message);
         res.status(500).json({ 
             error: 'Failed to create review',
             details: error.message 
@@ -223,10 +223,10 @@ router.delete('/:id', async (req, res) => {
         // ✅ UPDATE HOSTEL RATING after deletion
         await updateHostelRating(hostelId);
         
-        console.log(`✅ Review ${id} deleted, hostel ${hostelId} rating updated`);
+        console.log(` Review ${id} deleted, hostel ${hostelId} rating updated`);
         res.json({ message: 'Review deleted successfully' });
     } catch (error) {
-        console.error('❌ Error deleting review:', error.message);
+        console.error(' Error deleting review:', error.message);
         res.status(500).json({ 
             error: 'Failed to delete review',
             details: error.message 
@@ -261,10 +261,10 @@ async function updateHostelRating(hostelId) {
             [avgRating, reviewCount, hostelId]
         );
 
-        console.log(`📊 Updated hostel ${hostelId} rating: ${avgRating} (${reviewCount} reviews)`);
+        console.log(` Updated hostel ${hostelId} rating: ${avgRating} (${reviewCount} reviews)`);
 
     } catch (error) {
-        console.error('❌ Error updating hostel rating:', error.message);
+        console.error(' Error updating hostel rating:', error.message);
     }
 }
 

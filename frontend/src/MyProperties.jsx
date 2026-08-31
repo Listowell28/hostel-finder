@@ -132,7 +132,7 @@ function MyProperties() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
-              🏠 My <span style={{ color: '#e94560' }}>Properties</span>
+               My <span style={{ color: '#e94560' }}>Properties</span>
             </Typography>
             <Typography variant="body2" sx={{ color: '#8892b0' }}>
               {hostels.length} property{hostels.length !== 1 ? 's' : ''} listed
@@ -170,7 +170,7 @@ function MyProperties() {
                 <Card sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.12)' } }}>
                   <Box sx={{ height: 140, background: 'linear-gradient(135deg, #1a1a2e, #0f3460)', p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Chip label={`⭐ ${hostel.rating || 'New'}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
+                      <Chip label={` ${hostel.rating || 'New'}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
                       <Chip label={formatPrice(hostel.price_per_year)} size="small" sx={{ bgcolor: '#e94560', color: 'white' }} />
                     </Box>
                     <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>{hostel.name}</Typography>

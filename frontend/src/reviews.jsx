@@ -45,7 +45,7 @@ function Reviews({ hostelId }) {
     }
 
     try {
-      console.log('📊 Fetching reviews for hostel:', hostelId);
+      console.log(' Fetching reviews for hostel:', hostelId);
       
       // ✅ CORRECT endpoint
       const res = await fetch(`${API_URL}/api/reviews/hostel/${hostelId}`);
@@ -55,7 +55,7 @@ function Reviews({ hostelId }) {
       }
       
       const data = await res.json();
-      console.log('✅ Reviews fetched:', data);
+      console.log(' Reviews fetched:', data);
       setReviews(data);
 
       // Calculate average rating from fetched reviews
@@ -69,7 +69,7 @@ function Reviews({ hostelId }) {
         setTotalReviews(0);
       }
     } catch (err) {
-      console.error('❌ Error fetching reviews:', err);
+      console.error(' Error fetching reviews:', err);
       setError('Failed to load reviews');
     } finally {
       setLoading(false);
@@ -121,14 +121,14 @@ function Reviews({ hostelId }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.details || 'Failed to submit review');
 
-      setSuccess('✅ Review submitted successfully!');
+      setSuccess(' Review submitted successfully!');
       setRating(0);
       setComment('');
       setEditingReview(null);
       setShowForm(false);
       fetchReviews();
     } catch (err) {
-      console.error('❌ Submit error:', err);
+      console.error(' Submit error:', err);
       setError(err.message);
     } finally {
       setSubmitting(false);
@@ -154,10 +154,10 @@ function Reviews({ hostelId }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete');
       
-      setSuccess('✅ Review deleted');
+      setSuccess(' Review deleted');
       fetchReviews();
     } catch (err) {
-      console.error('❌ Delete error:', err);
+      console.error(' Delete error:', err);
       setError(err.message);
     }
   };

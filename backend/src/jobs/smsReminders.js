@@ -7,7 +7,7 @@ const smsService = new SmsService();
 
 // Run every day at 8 AM
 cron.schedule('0 8 * * *', async () => {
-    console.log('🕐 Running SMS reminders...');
+    console.log(' Running SMS reminders...');
     
     try {
         // Get bookings checking in tomorrow
@@ -32,18 +32,18 @@ cron.schedule('0 8 * * *', async () => {
             AND b.payment_status = 'paid'
         `, [dateStr]);
 
-        console.log(`📱 Found ${bookings.rows.length} bookings for reminder`);
+        console.log(` Found ${bookings.rows.length} bookings for reminder`);
 
         for (const booking of bookings.rows) {
             const message = `
-🔔 CHECK-IN REMINDER!
+ CHECK-IN REMINDER!
 
 Hello ${booking.student_name}!
 Your check-in at ${booking.hostel_name} is TOMORROW!
 
-📍 Location: ${booking.hostel_location}
-📅 Date: ${booking.check_in}
-📞 Contact: ${booking.hostel_phone}
+ Location: ${booking.hostel_location}
+ Date: ${booking.check_in}
+ Contact: ${booking.hostel_phone}
 
 Please bring your ID and confirmation.
             `.trim();
@@ -57,7 +57,7 @@ Please bring your ID and confirmation.
                 WHERE id = $1
             `, [booking.id]);
             
-            console.log(`✅ Reminder sent to ${booking.student_phone}`);
+            console.log(` Reminder sent to ${booking.student_phone}`);
         }
 
     } catch (error) {
