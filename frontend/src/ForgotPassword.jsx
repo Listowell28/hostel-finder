@@ -19,8 +19,14 @@ import {
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Your EmailJS credentials
+const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';      // Replace with your Service ID
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';    // Replace with your Template ID
+const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';      // Replace with your Public Key
 
 function ForgotPassword() {
   const navigate = useNavigate();
@@ -39,7 +45,7 @@ function ForgotPassword() {
 
   const steps = ['Enter Email', 'Verify OTP', 'Reset Password'];
 
-  // Step 1: Send OTP to email
+  // Step 1: Send OTP via EmailJS
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
@@ -53,20 +59,54 @@ function ForgotPassword() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      // Check if email exists in database
+      const checkRes = await fetch(`${API_URL}/api/auth/check-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+      const checkData = await checkRes.json();
+      if (!checkRes.ok) {
+        throw new Error(checkData.error || 'No account found with this email');
+      }
 
-      setVerificationId(data.verificationId);
-      setSuccess(` OTP sent to your email: ${email}`);
+      const fullName = checkData.full_name || 'User';
+      
+      // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+
+      // Store OTP in database
+      const storeRes = await fetch(`${API_URL}/api/auth/store-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, expiresAt })
+      });
+
+      if (!storeRes.ok) {
+        throw new Error('Failed to store OTP');
+      }
+
+      // Send OTP via EmailJS
+      const templateParams = {
+        to_email: email,
+        full_name: fullName,
+        otp: otp
+      };
+
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      setSuccess(`OTP sent to your email: ${email}`);
+      setVerificationId(email);
       setActiveStep(1);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -99,7 +139,7 @@ function ForgotPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid OTP');
 
-      setSuccess(' OTP verified!');
+      setSuccess('OTP verified!');
       setActiveStep(2);
     } catch (err) {
       setError(err.message);
@@ -141,7 +181,7 @@ function ForgotPassword() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reset password');
 
-      setSuccess(' Password reset successfully!');
+      setSuccess('Password reset successfully!');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
@@ -157,16 +197,36 @@ function ForgotPassword() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/resend-otp`, {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+
+      await fetch(`${API_URL}/api/auth/store-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, expiresAt })
+      });
+
+      const userRes = await fetch(`${API_URL}/api/auth/get-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
+      const userData = await userRes.json();
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to resend OTP');
+      const templateParams = {
+        to_email: email,
+        full_name: userData.full_name || 'User',
+        otp: otp
+      };
 
-      setSuccess(' New OTP sent to your email!');
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      setSuccess('New OTP sent to your email!');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -187,7 +247,6 @@ function ForgotPassword() {
         p: { xs: 2, sm: 3 }
       }}
     >
-      {/* Decorative Background */}
       <Box
         sx={{
           position: 'absolute',
@@ -222,7 +281,6 @@ function ForgotPassword() {
           boxShadow: '0 30px 80px rgba(0,0,0,0.4)'
         }}
       >
-        {/* Header */}
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Typography
             variant="h5"
@@ -232,14 +290,13 @@ function ForgotPassword() {
               fontSize: { xs: '1.5rem', sm: '1.8rem' }
             }}
           >
-             Reset Password
+            Reset Password
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', mt: 0.5 }}>
             We'll help you reset your password
           </Typography>
         </Box>
 
-        {/* Stepper */}
         <Stepper
           activeStep={activeStep}
           sx={{
@@ -302,7 +359,7 @@ function ForgotPassword() {
             />
 
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', display: 'block', mb: 2 }}>
-               We'll send a 6-digit code to your email
+              We'll send a 6-digit code to your email
             </Typography>
 
             <Button

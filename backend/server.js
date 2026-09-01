@@ -1898,6 +1898,93 @@ app.delete('/api/admin/rooms/:id', authenticate, async (req, res) => {
   }
 });
 
+// ============ OTP ROUTES (For EmailJS) ============
+
+// Check if email exists
+app.post('/api/auth/check-email', async (req, res) => {
+  const { email } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'SELECT id, full_name FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No account found with this email' });
+    }
+    
+    res.json({ full_name: result.rows[0].full_name });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to check email' });
+  }
+});
+
+// Store OTP
+app.post('/api/auth/store-otp', async (req, res) => {
+  const { email, otp, expiresAt } = req.body;
+  
+  try {
+    await pool.query(
+      `INSERT INTO otp_store (email, otp, expires_at, created_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (email) DO UPDATE 
+       SET otp = $2, expires_at = $3, created_at = NOW()`,
+      [email, otp, new Date(expiresAt)]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to store OTP' });
+  }
+});
+
+// Get user by email
+app.post('/api/auth/get-user', async (req, res) => {
+  const { email } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'SELECT full_name FROM users WHERE email = $1',
+      [email]
+    );
+    res.json({ full_name: result.rows[0]?.full_name || 'User' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// Verify OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { email, code } = req.body;
+  
+  try {
+    const result = await pool.query(
+      'SELECT otp, expires_at FROM otp_store WHERE email = $1',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'No OTP found' });
+    }
+    
+    const stored = result.rows[0];
+    const now = new Date();
+    const expiresAt = new Date(stored.expires_at);
+    
+    if (now > expiresAt) {
+      return res.status(400).json({ error: 'OTP has expired' });
+    }
+    
+    if (stored.otp !== code) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
 // ============ WISHLIST ROUTES ============
 
 app.get('/api/wishlist', authenticate, async (req, res) => {
