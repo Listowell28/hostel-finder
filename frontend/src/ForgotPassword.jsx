@@ -24,9 +24,9 @@ import emailjs from '@emailjs/browser';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Your EmailJS credentials
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';      // Replace with your Service ID
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';    // Replace with your Template ID
-const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';      // Replace with your Public Key
+const EMAILJS_SERVICE_ID = 'service_dub6qjk';      // Replace with your Service ID
+const EMAILJS_TEMPLATE_ID = 'template_to5vgmq';    // Replace with your Template ID
+const EMAILJS_PUBLIC_KEY = 'user_Kf93HlhxZKS0OObhQ';      // Replace with your Public Key
 
 function ForgotPassword() {
   const navigate = useNavigate();
