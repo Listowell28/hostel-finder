@@ -11,6 +11,7 @@ require('dotenv').config();
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const sgMail = require('@sendgrid/mail');
 
 // SMS Imports
 const { 
@@ -21,6 +22,11 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize SendGrid
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 // Create HTTP server and Socket.io
 const server = http.createServer(app);
@@ -181,6 +187,62 @@ async function authenticate(req, res, next) {
   next();
 }
 
+// ============ FORGOT PASSWORD ============
+const otpStore = {};
+
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+const sendOTPEmail = async (email, otp, full_name) => {
+  try {
+    const fromEmail = process.env.EMAIL_FROM || 'noreply@hostelfinder.com';
+    
+    const msg = {
+      to: email,
+      from: fromEmail,
+      subject: 'HostelFinder - Password Reset OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: white; border-radius: 10px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #e94560; margin: 0;">HostelFinder</h1>
+            <p style="color: #8892b0; margin: 5px 0;">Find Your Perfect Space</p>
+          </div>
+          
+          <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+            <h2 style="color: #e94560; text-align: center;">Password Reset</h2>
+            <p>Hello ${full_name || 'User'},</p>
+            <p>We received a request to reset your password for your HostelFinder account.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="display: inline-block; background: #e94560; color: white; padding: 15px 40px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 8px;">
+                ${otp}
+              </div>
+              <p style="color: #8892b0; font-size: 12px; margin-top: 10px;">This code expires in 10 minutes</p>
+            </div>
+            
+            <p style="color: #8892b0; font-size: 14px;">If you didn't request this, please ignore this email.</p>
+            
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;" />
+            
+            <p style="color: #8892b0; font-size: 12px; text-align: center;">
+              HostelFinder - Find Your Perfect Space<br />
+              <a href="https://hostel-finder-xi.vercel.app" style="color: #e94560; text-decoration: none;">Visit our website</a>
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    await sgMail.send(msg);
+    console.log('Email OTP sent to:', email);
+    return true;
+  } catch (err) {
+    console.error('Email error:', err.response?.body || err.message);
+    return false;
+  }
+};
+
 // ============ API ROUTES ============
 
 // Health Check
@@ -190,6 +252,183 @@ app.get('/api/health', (req, res) => {
     message: 'Backend is running!',
     timestamp: new Date().toISOString()
   });
+});
+
+// ============ FORGOT PASSWORD ROUTES ============
+
+// Step 1: Request OTP
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const userResult = await pool.query(
+      'SELECT id, email, full_name, phone FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No account found with this email' });
+    }
+
+    const user = userResult.rows[0];
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    otpStore[email] = {
+      otp,
+      expiresAt,
+      userId: user.id,
+      attempts: 0
+    };
+
+    const emailSent = await sendOTPEmail(email, otp, user.full_name);
+
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send OTP email' });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent to your email',
+      verificationId: email
+    });
+
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Step 2: Verify OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { email, code, verificationId } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and code are required' });
+  }
+
+  try {
+    const stored = otpStore[email];
+    if (!stored) {
+      return res.status(400).json({ error: 'No OTP request found' });
+    }
+
+    if (Date.now() > stored.expiresAt) {
+      delete otpStore[email];
+      return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+    }
+
+    if (stored.attempts >= 5) {
+      delete otpStore[email];
+      return res.status(400).json({ error: 'Too many failed attempts. Please request a new OTP.' });
+    }
+
+    if (stored.otp !== code) {
+      stored.attempts += 1;
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    stored.verified = true;
+    res.json({ 
+      success: true, 
+      message: 'OTP verified successfully' 
+    });
+
+  } catch (err) {
+    console.error('Verify OTP error:', err);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
+// Step 3: Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  try {
+    const stored = otpStore[email];
+    if (!stored || !stored.verified) {
+      return res.status(400).json({ error: 'OTP not verified' });
+    }
+
+    if (stored.otp !== code) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE email = $2',
+      [hashedPassword, email]
+    );
+
+    delete otpStore[email];
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Resend OTP
+app.post('/api/auth/resend-otp', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const userResult = await pool.query(
+      'SELECT full_name FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No account found' });
+    }
+
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    otpStore[email] = {
+      otp,
+      expiresAt,
+      userId: userResult.rows[0].id,
+      attempts: 0
+    };
+
+    const emailSent = await sendOTPEmail(email, otp, userResult.rows[0].full_name);
+
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send OTP email' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'New OTP sent to your email' 
+    });
+
+  } catch (err) {
+    console.error('Resend OTP error:', err);
+    res.status(500).json({ error: 'Failed to resend OTP' });
+  }
 });
 
 // Google Callback
@@ -377,10 +616,10 @@ app.post('/api/hostels', authenticate, async (req, res) => {
       ]
     );
     
-    console.log(' Hostel created:', result.rows[0].name, 'Category:', result.rows[0].category);
+    console.log('Hostel created:', result.rows[0].name, 'Category:', result.rows[0].category);
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(' Error creating hostel:', err);
+    console.error('Error creating hostel:', err);
     res.status(500).json({ error: 'Failed to create hostel' });
   }
 });
@@ -390,8 +629,8 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   
-  console.log(' Updating hostel ID:', id);
-  console.log(' Fields to update:', Object.keys(updates));
+  console.log('Updating hostel ID:', id);
+  console.log('Fields to update:', Object.keys(updates));
   
   try {
     const check = await pool.query('SELECT owner_id FROM hostels WHERE id = $1', [id]);
@@ -458,8 +697,8 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
     values.push(id);
     const query = `UPDATE hostels SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
     
-    console.log(' Query:', query);
-    console.log(' Values:', values);
+    console.log('Query:', query);
+    console.log('Values:', values);
 
     const result = await pool.query(query, values);
     
@@ -467,13 +706,13 @@ app.put('/api/hostels/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Hostel not found' });
     }
     
-    console.log(' Hostel updated:', result.rows[0].name, 'Category:', result.rows[0].category);
+    console.log('Hostel updated:', result.rows[0].name, 'Category:', result.rows[0].category);
     res.json({ 
       message: 'Hostel updated successfully', 
       hostel: result.rows[0] 
     });
   } catch (err) {
-    console.error(' Error updating hostel:', err);
+    console.error('Error updating hostel:', err);
     res.status(500).json({ error: 'Failed to update hostel' });
   }
 });
@@ -566,7 +805,7 @@ app.put('/api/users/profile', authenticate, async (req, res) => {
 // Get user's bookings
 app.get('/api/my-bookings', authenticate, async (req, res) => {
   try {
-    console.log(' Fetching bookings for user:', req.user.id);
+    console.log('Fetching bookings for user:', req.user.id);
     
     const result = await pool.query(
       `SELECT bookings.*, 
@@ -581,10 +820,10 @@ app.get('/api/my-bookings', authenticate, async (req, res) => {
       [req.user.id]
     );
     
-    console.log(' Bookings found:', result.rows.length);
+    console.log('Bookings found:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
-    console.error(' Error fetching bookings:', err);
+    console.error('Error fetching bookings:', err);
     res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 });
@@ -827,7 +1066,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
   try {
     uploadMultiple(req, res, async function(err) {
       if (err) {
-        console.error(' Multer error:', err);
+        console.error('Multer error:', err);
         return res.status(400).json({ error: err.message || 'Upload failed' });
       }
 
@@ -835,7 +1074,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
         return res.status(400).json({ error: 'No images uploaded' });
       }
 
-      console.log(` Uploading ${req.files.length} images to Supabase...`);
+      console.log(`Uploading ${req.files.length} images to Supabase...`);
 
       const uploadedImages = [];
       for (const file of req.files) {
@@ -845,9 +1084,9 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
             url: publicUrl,
             filename: file.originalname
           });
-          console.log(` Uploaded: ${file.originalname} -> ${publicUrl}`);
+          console.log(`Uploaded: ${file.originalname} -> ${publicUrl}`);
         } catch (uploadError) {
-          console.error(' Upload to Supabase failed:', uploadError);
+          console.error('Upload to Supabase failed:', uploadError);
         }
       }
 
@@ -857,7 +1096,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
 
       const imageUrls = uploadedImages.map(img => img.url);
       
-      console.log(` Successfully uploaded ${imageUrls.length} images`);
+      console.log(`Successfully uploaded ${imageUrls.length} images`);
       
       res.status(200).json({
         success: true,
@@ -867,7 +1106,7 @@ app.post('/api/upload/multiple', authenticate, async (req, res) => {
       });
     });
   } catch (err) {
-    console.error(' Upload error:', err);
+    console.error('Upload error:', err);
     res.status(500).json({ error: err.message || 'Upload failed' });
   }
 });
@@ -894,7 +1133,7 @@ app.post('/api/upload/ad', authenticate, adUpload.single('file'), async (req, re
     });
 
   } catch (err) {
-    console.error(' Ad upload error:', err);
+    console.error('Ad upload error:', err);
     res.status(500).json({ error: 'Failed to upload file' });
   }
 });
@@ -1112,42 +1351,6 @@ app.delete('/api/admin/hostels/:id', authenticate, async (req, res) => {
   }
 });
 
-// ============ SUPPORT ROUTE ============
-
-app.post('/api/support', authenticate, async (req, res) => {
-  const { name, email, message } = req.body;
-
-  if (!name || !message) {
-    return res.status(400).json({ error: 'Name and message are required' });
-  }
-
-  try {
-    // Send email notification (optional)
-    // You can use nodemailer, sendgrid, etc.
-    
-    console.log(' Support message from:', name);
-    console.log(' Email:', email || 'Not provided');
-    console.log(' Message:', message);
-    console.log(' User ID:', req.user.id);
-    
-    // Save to database (optional)
-    // await pool.query(
-    //   `INSERT INTO support_messages (user_id, name, email, message)
-    //    VALUES ($1, $2, $3, $4)`,
-    //   [req.user.id, name, email, message]
-    // );
-
-    res.json({ 
-      success: true, 
-      message: 'Support message sent successfully' 
-    });
-
-  } catch (err) {
-    console.error(' Support error:', err);
-    res.status(500).json({ error: 'Failed to send support message' });
-  }
-});
-
 // ============ ADMIN BOOKING MANAGEMENT ============
 
 app.get('/api/admin/bookings', authenticate, async (req, res) => {
@@ -1209,10 +1412,10 @@ app.put('/api/admin/bookings/:id/status', authenticate, async (req, res) => {
       [booking.user_id]
     );
 
-    console.log(' Booking Status Update:');
-    console.log(' Booking ID:', booking.id);
-    console.log(' New Status:', booking.status);
-    console.log(' User Phone:', userResult.rows[0]?.phone || 'No phone found');
+    console.log('Booking Status Update:');
+    console.log('Booking ID:', booking.id);
+    console.log('New Status:', booking.status);
+    console.log('User Phone:', userResult.rows[0]?.phone || 'No phone found');
 
     if (userResult.rows.length > 0 && userResult.rows[0].phone) {
       const bookingData = {
@@ -1224,26 +1427,26 @@ app.put('/api/admin/bookings/:id/status', authenticate, async (req, res) => {
       };
 
       if (booking.status === 'confirmed') {
-        console.log(' Sending CONFIRMATION SMS to:', userResult.rows[0].phone);
+        console.log('Sending CONFIRMATION SMS to:', userResult.rows[0].phone);
         try {
           await sendUserBookingConfirmation(userResult.rows[0].phone, bookingData);
-          console.log(' Confirmation SMS sent successfully');
+          console.log('Confirmation SMS sent successfully');
         } catch (err) {
-          console.error(' Failed to send confirmation SMS:', err);
+          console.error('Failed to send confirmation SMS:', err);
         }
       }
 
       if (booking.status === 'cancelled') {
-        console.log(' Sending CANCELLATION SMS to:', userResult.rows[0].phone);
+        console.log('Sending CANCELLATION SMS to:', userResult.rows[0].phone);
         try {
           await sendUserBookingCancellation(userResult.rows[0].phone, bookingData);
-          console.log(' Cancellation SMS sent successfully');
+          console.log('Cancellation SMS sent successfully');
         } catch (err) {
-          console.error(' Failed to send cancellation SMS:', err);
+          console.error('Failed to send cancellation SMS:', err);
         }
       }
     } else {
-      console.log(' User phone number not found in database');
+      console.log('User phone number not found in database');
     }
 
     res.json({
@@ -1355,7 +1558,6 @@ app.post('/api/ads/:id/click', async (req, res) => {
 
 // ============ PREMIUM ROUTES ============
 
-// ✅ Check and auto-expire expired subscriptions (run on server start and every hour)
 const checkExpiredPremium = async () => {
   try {
     const result = await pool.query(`
@@ -1366,61 +1568,22 @@ const checkExpiredPremium = async () => {
     `);
     
     if (result.rows.length > 0) {
-      console.log(` Auto-expired ${result.rows.length} premium listings:`, 
+      console.log(`Auto-expired ${result.rows.length} premium listings:`, 
         result.rows.map(h => h.name).join(', ')
-      );
-      
-      // Update subscription status to expired
-      await pool.query(
-        `UPDATE premium_subscriptions 
-         SET status = 'expired' 
-         WHERE end_date < NOW() AND status = 'active'`
       );
     }
   } catch (err) {
-    console.error(' Error expiring premium listings:', err);
+    console.error('Error expiring premium listings:', err);
   }
 };
 
-// Run on server start
 checkExpiredPremium();
-
-// Run every hour to check for expired subscriptions
 setInterval(checkExpiredPremium, 60 * 60 * 1000);
 
-// ✅ Get premium status with expiry info
-const getPremiumStatus = async (hostelId) => {
-  try {
-    const result = await pool.query(
-      `SELECT is_premium, premium_tier, premium_expiry FROM hostels WHERE id = $1`,
-      [hostelId]
-    );
-    
-    if (result.rows.length === 0) return null;
-    
-    const hostel = result.rows[0];
-    const now = new Date();
-    const expiry = hostel.premium_expiry ? new Date(hostel.premium_expiry) : null;
-    const isActive = hostel.is_premium && expiry && expiry > now;
-    const daysLeft = isActive ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : 0;
-    
-    return {
-      isPremium: isActive,
-      tier: isActive ? hostel.premium_tier : 'free',
-      expiryDate: hostel.premium_expiry,
-      daysLeft: daysLeft
-    };
-  } catch (err) {
-    console.error('Error getting premium status:', err);
-    return null;
-  }
-};
-
-// ✅ Upgrade or downgrade premium
 app.post('/api/premium/upgrade', authenticate, async (req, res) => {
   const { hostelId, tier } = req.body;
 
-  console.log(' Premium upgrade request:', { hostelId, tier });
+  console.log('Premium upgrade request:', { hostelId, tier });
 
   if (!hostelId || !tier) {
     return res.status(400).json({ error: 'Hostel ID and tier are required' });
@@ -1440,7 +1603,6 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    // ✅ If tier is 'free', remove premium
     if (tier === 'free') {
       const result = await pool.query(
         `UPDATE hostels 
@@ -1450,7 +1612,6 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
         [hostelId]
       );
       
-      // Update subscription status
       await pool.query(
         `UPDATE premium_subscriptions 
          SET status = 'cancelled' 
@@ -1464,12 +1625,10 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
       });
     }
 
-    // ✅ Calculate expiry date (30 days from now)
     const startDate = new Date();
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
 
-    // ✅ Update hostel to premium
     const result = await pool.query(
       `UPDATE hostels 
        SET is_premium = true, premium_tier = $1, premium_expiry = $2
@@ -1480,7 +1639,6 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
 
     const price = tier === 'vip' ? 250 : 100;
 
-    // ✅ Check if there's an existing active subscription
     const existingSub = await pool.query(
       `SELECT id FROM premium_subscriptions 
        WHERE hostel_id = $1 AND status = 'active'`,
@@ -1488,7 +1646,6 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
     );
 
     if (existingSub.rows.length > 0) {
-      // ✅ Update existing subscription
       await pool.query(
         `UPDATE premium_subscriptions 
          SET tier = $1, price = $2, end_date = $3, start_date = $4
@@ -1496,7 +1653,6 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
         [tier, price, expiryDate, startDate, existingSub.rows[0].id]
       );
     } else {
-      // ✅ Create new subscription
       await pool.query(
         `INSERT INTO premium_subscriptions (hostel_id, tier, price, start_date, end_date, status)
          VALUES ($1, $2, $3, $4, $5, 'active')`,
@@ -1504,7 +1660,7 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
       );
     }
 
-    console.log('✅ Hostel upgraded to:', tier, 'expires on:', expiryDate);
+    console.log('Hostel upgraded to:', tier, 'expires on:', expiryDate);
     res.json({
       message: `Hostel upgraded to ${tier.toUpperCase()} until ${expiryDate.toLocaleDateString()}!`,
       hostel: result.rows[0],
@@ -1513,12 +1669,11 @@ app.post('/api/premium/upgrade', authenticate, async (req, res) => {
     });
 
   } catch (err) {
-    console.error(' Premium upgrade error:', err);
+    console.error('Premium upgrade error:', err);
     res.status(500).json({ error: 'Failed to upgrade hostel: ' + err.message });
   }
 });
 
-// ✅ Get premium stats
 app.get('/api/premium/stats', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1552,7 +1707,6 @@ app.get('/api/premium/stats', authenticate, async (req, res) => {
   }
 });
 
-// ✅ Get all premium hostels
 app.get('/api/premium/hostels', authenticate, async (req, res) => {
   try {
     const result = await pool.query(
@@ -1567,7 +1721,6 @@ app.get('/api/premium/hostels', authenticate, async (req, res) => {
   }
 });
 
-// ✅ Check premium status for a specific hostel
 app.get('/api/premium/status/:hostelId', authenticate, async (req, res) => {
   const { hostelId } = req.params;
 
@@ -1601,7 +1754,6 @@ app.get('/api/premium/status/:hostelId', authenticate, async (req, res) => {
   }
 });
 
-// ✅ Get expiring premium hostels (for notifications)
 app.get('/api/premium/expiring', authenticate, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -1621,337 +1773,6 @@ app.get('/api/premium/expiring', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Error fetching expiring premium hostels:', err);
     res.status(500).json({ error: 'Failed to fetch expiring hostels' });
-  }
-});
-
-// ============ WISHLIST ROUTES ============
-
-// Get user's wishlist
-app.get('/api/wishlist', authenticate, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT h.* 
-       FROM wishlist w
-       JOIN hostels h ON w.hostel_id = h.id
-       WHERE w.user_id = $1
-       ORDER BY w.created_at DESC`,
-      [req.user.id]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching wishlist:', err);
-    res.status(500).json({ error: 'Failed to fetch wishlist' });
-  }
-});
-
-// Check if hostel is in wishlist
-app.get('/api/wishlist/check/:hostelId', authenticate, async (req, res) => {
-  const { hostelId } = req.params;
-  try {
-    const result = await pool.query(
-      'SELECT id FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
-      [req.user.id, hostelId]
-    );
-    res.json({ isWishlisted: result.rows.length > 0 });
-  } catch (err) {
-    console.error('Error checking wishlist:', err);
-    res.status(500).json({ error: 'Failed to check wishlist' });
-  }
-});
-
-// Toggle wishlist (add/remove)
-app.post('/api/wishlist/toggle', authenticate, async (req, res) => {
-  const { hostelId } = req.body;
-  
-  if (!hostelId) {
-    return res.status(400).json({ error: 'Hostel ID is required' });
-  }
-
-  try {
-    // Check if exists
-    const check = await pool.query(
-      'SELECT id FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
-      [req.user.id, hostelId]
-    );
-
-    if (check.rows.length > 0) {
-      // Remove from wishlist
-      await pool.query(
-        'DELETE FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
-        [req.user.id, hostelId]
-      );
-      return res.json({ isWishlisted: false, message: 'Removed from wishlist' });
-    } else {
-      // Add to wishlist
-      await pool.query(
-        'INSERT INTO wishlist (user_id, hostel_id) VALUES ($1, $2)',
-        [req.user.id, hostelId]
-      );
-      return res.json({ isWishlisted: true, message: 'Added to wishlist' });
-    }
-  } catch (err) {
-    console.error('Error toggling wishlist:', err);
-    res.status(500).json({ error: 'Failed to toggle wishlist' });
-  }
-});
-
-// Remove from wishlist
-app.post('/api/wishlist/remove', authenticate, async (req, res) => {
-  const { hostelId } = req.body;
-  
-  try {
-    await pool.query(
-      'DELETE FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
-      [req.user.id, hostelId]
-    );
-    res.json({ message: 'Removed from wishlist' });
-  } catch (err) {
-    console.error('Error removing from wishlist:', err);
-    res.status(500).json({ error: 'Failed to remove from wishlist' });
-  }
-});
-
-// ============ FORGOT PASSWORD ROUTES ============
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
-
-// Store OTPs temporarily
-const otpStore = {};
-
-// Generate 6-digit OTP
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// ✅ Email transporter setup (using Gmail)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
-
-// ✅ Send OTP via Email
-const sendOTPEmail = async (email, otp, full_name) => {
-  try {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: ' HostelFinder - Password Reset OTP',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #1a1a2e; color: white; border-radius: 10px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #e94560; margin: 0;">HostelFinder</h1>
-            <p style="color: #8892b0; margin: 5px 0;">Find Your Perfect Space</p>
-          </div>
-          
-          <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
-            <h2 style="color: #e94560; text-align: center;"> Password Reset</h2>
-            <p>Hello ${full_name || 'User'},</p>
-            <p>We received a request to reset your password for your HostelFinder account.</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <div style="display: inline-block; background: #e94560; color: white; padding: 15px 40px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 8px;">
-                ${otp}
-              </div>
-              <p style="color: #8892b0; font-size: 12px; margin-top: 10px;">This code expires in 10 minutes</p>
-            </div>
-            
-            <p style="color: #8892b0; font-size: 14px;">If you didn't request this, please ignore this email.</p>
-            
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;" />
-            
-            <p style="color: #8892b0; font-size: 12px; text-align: center;">
-              HostelFinder - Find Your Perfect Space<br />
-              <a href="https://hostel-finder-xi.vercel.app" style="color: #e94560; text-decoration: none;">Visit our website</a>
-            </p>
-          </div>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(` Email OTP sent to ${email}`);
-    return true;
-  } catch (err) {
-    console.error(' Email error:', err);
-    return false;
-  }
-};
-
-// Step 1: Request OTP (Email Only)
-app.post('/api/auth/forgot-password', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
-
-  try {
-    // Check if user exists
-    const userResult = await pool.query(
-      'SELECT id, email, full_name, phone FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'No account found with this email' });
-    }
-
-    const user = userResult.rows[0];
-    const otp = generateOTP();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    // Store OTP
-    otpStore[email] = {
-      otp,
-      expiresAt,
-      userId: user.id,
-      attempts: 0
-    };
-
-    // ✅ Send OTP via Email (Only)
-    await sendOTPEmail(email, otp, user.full_name);
-
-    res.json({
-      success: true,
-      message: 'OTP sent to your email',
-      verificationId: email
-    });
-
-  } catch (err) {
-    console.error('Forgot password error:', err);
-    res.status(500).json({ error: 'Failed to process request' });
-  }
-});
-
-// Step 2: Verify OTP
-app.post('/api/auth/verify-otp', async (req, res) => {
-  const { email, code, verificationId } = req.body;
-
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Email and code are required' });
-  }
-
-  try {
-    const stored = otpStore[email];
-    if (!stored) {
-      return res.status(400).json({ error: 'No OTP request found' });
-    }
-
-    if (Date.now() > stored.expiresAt) {
-      delete otpStore[email];
-      return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
-    }
-
-    if (stored.attempts >= 5) {
-      delete otpStore[email];
-      return res.status(400).json({ error: 'Too many failed attempts. Please request a new OTP.' });
-    }
-
-    if (stored.otp !== code) {
-      stored.attempts += 1;
-      return res.status(400).json({ error: 'Invalid OTP' });
-    }
-
-    // OTP verified
-    stored.verified = true;
-    res.json({ 
-      success: true, 
-      message: 'OTP verified successfully' 
-    });
-
-  } catch (err) {
-    console.error('Verify OTP error:', err);
-    res.status(500).json({ error: 'Failed to verify OTP' });
-  }
-});
-
-// Step 3: Reset Password
-app.post('/api/auth/reset-password', async (req, res) => {
-  const { email, code, newPassword } = req.body;
-
-  if (!email || !code || !newPassword) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters' });
-  }
-
-  try {
-    const stored = otpStore[email];
-    if (!stored || !stored.verified) {
-      return res.status(400).json({ error: 'OTP not verified' });
-    }
-
-    if (stored.otp !== code) {
-      return res.status(400).json({ error: 'Invalid OTP' });
-    }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password in database
-    await pool.query(
-      'UPDATE users SET password_hash = $1 WHERE email = $2',
-      [hashedPassword, email]
-    );
-
-    // Clean up
-    delete otpStore[email];
-
-    res.json({
-      success: true,
-      message: 'Password reset successfully'
-    });
-
-  } catch (err) {
-    console.error('Reset password error:', err);
-    res.status(500).json({ error: 'Failed to reset password' });
-  }
-});
-
-// Resend OTP
-app.post('/api/auth/resend-otp', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
-
-  try {
-    const userResult = await pool.query(
-      'SELECT full_name FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'No account found' });
-    }
-
-    const otp = generateOTP();
-    const expiresAt = Date.now() + 10 * 60 * 1000;
-
-    otpStore[email] = {
-      otp,
-      expiresAt,
-      userId: userResult.rows[0].id,
-      attempts: 0
-    };
-
-    // ✅ Send OTP via Email (Only)
-    await sendOTPEmail(email, otp, userResult.rows[0].full_name);
-
-    res.json({ 
-      success: true, 
-      message: 'New OTP sent to your email' 
-    });
-
-  } catch (err) {
-    console.error('Resend OTP error:', err);
-    res.status(500).json({ error: 'Failed to resend OTP' });
   }
 });
 
@@ -2077,41 +1898,118 @@ app.delete('/api/admin/rooms/:id', authenticate, async (req, res) => {
   }
 });
 
+// ============ WISHLIST ROUTES ============
+
+app.get('/api/wishlist', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT h.* 
+       FROM wishlist w
+       JOIN hostels h ON w.hostel_id = h.id
+       WHERE w.user_id = $1
+       ORDER BY w.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching wishlist:', err);
+    res.status(500).json({ error: 'Failed to fetch wishlist' });
+  }
+});
+
+app.get('/api/wishlist/check/:hostelId', authenticate, async (req, res) => {
+  const { hostelId } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT id FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+      [req.user.id, hostelId]
+    );
+    res.json({ isWishlisted: result.rows.length > 0 });
+  } catch (err) {
+    console.error('Error checking wishlist:', err);
+    res.status(500).json({ error: 'Failed to check wishlist' });
+  }
+});
+
+app.post('/api/wishlist/toggle', authenticate, async (req, res) => {
+  const { hostelId } = req.body;
+  
+  if (!hostelId) {
+    return res.status(400).json({ error: 'Hostel ID is required' });
+  }
+
+  try {
+    const check = await pool.query(
+      'SELECT id FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+      [req.user.id, hostelId]
+    );
+
+    if (check.rows.length > 0) {
+      await pool.query(
+        'DELETE FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+        [req.user.id, hostelId]
+      );
+      return res.json({ isWishlisted: false, message: 'Removed from wishlist' });
+    } else {
+      await pool.query(
+        'INSERT INTO wishlist (user_id, hostel_id) VALUES ($1, $2)',
+        [req.user.id, hostelId]
+      );
+      return res.json({ isWishlisted: true, message: 'Added to wishlist' });
+    }
+  } catch (err) {
+    console.error('Error toggling wishlist:', err);
+    res.status(500).json({ error: 'Failed to toggle wishlist' });
+  }
+});
+
+app.post('/api/wishlist/remove', authenticate, async (req, res) => {
+  const { hostelId } = req.body;
+  
+  try {
+    await pool.query(
+      'DELETE FROM wishlist WHERE user_id = $1 AND hostel_id = $2',
+      [req.user.id, hostelId]
+    );
+    res.json({ message: 'Removed from wishlist' });
+  } catch (err) {
+    console.error('Error removing from wishlist:', err);
+    res.status(500).json({ error: 'Failed to remove from wishlist' });
+  }
+});
+
 // ============ SOCKET.IO CHAT ============
 
 const onlineUsers = new Map();
 const supportUsers = new Map();
 
 io.on('connection', (socket) => {
-  console.log(' User connected:', socket.id);
+  console.log('User connected:', socket.id);
 
-  // User join for regular chat
   socket.on('user-join', (userId) => {
     if (userId) {
       const id = parseInt(userId);
       if (!isNaN(id)) {
         onlineUsers.set(id, socket.id);
         io.emit('online-users', Array.from(onlineUsers.keys()));
-        console.log(` User ${id} is online`);
+        console.log('User', id, 'is online');
       }
     }
   });
 
-  // ✅ SUPPORT CHAT
   socket.on('support-join', (userId) => {
     if (userId) {
       supportUsers.set(userId, socket.id);
       io.emit('support-online-status', true);
-      console.log(` Support user ${userId} joined`);
+      console.log('Support user', userId, 'joined');
     }
   });
 
   socket.on('send-support-message', async (data) => {
     const { senderId, senderName, message, isSupport } = data;
     
-    console.log(` Support message from ${senderName}:`, message);
+    console.log('Support message from', senderName, ':', message);
 
-    // Save to database (optional)
     try {
       await pool.query(
         `INSERT INTO support_messages (user_id, sender_name, message, is_support, created_at)
@@ -2122,7 +2020,6 @@ io.on('connection', (socket) => {
       console.error('Error saving support message:', err);
     }
 
-    // Broadcast to support team (you can add multiple support agents)
     io.emit('receive-support-message', {
       senderId,
       senderName,
@@ -2141,12 +2038,11 @@ io.on('connection', (socket) => {
     io.emit('support-stopped-typing');
   });
 
-  // Regular chat messages
   socket.on('send-message', async (data) => {
     const { senderId, receiverId, message, senderName } = data;
     
     if (!senderId || !receiverId || !message) {
-      console.log(' Missing fields');
+      console.log('Missing fields');
       return;
     }
 
@@ -2154,7 +2050,7 @@ io.on('connection', (socket) => {
     const receiver = parseInt(receiverId);
     
     if (isNaN(sender) || isNaN(receiver)) {
-      console.log(' Invalid IDs');
+      console.log('Invalid IDs');
       return;
     }
 
@@ -2245,7 +2141,7 @@ io.on('connection', (socket) => {
         break;
       }
     }
-    console.log(' User disconnected');
+    console.log('User disconnected');
   });
 });
 
@@ -2257,14 +2153,14 @@ app.use((err, req, res, next) => {
 
 // ============ START SERVER ============
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🏠 Hostels: http://localhost:${PORT}/api/hostels`);
-  console.log(`👤 Users: http://localhost:${PORT}/api/users`);
-  console.log(`🔐 Auth: http://localhost:${PORT}/api/auth`);
-  console.log(`📅 Bookings: http://localhost:${PORT}/api/my-bookings`);
-  console.log(`👑 Admin booking management enabled`);
-  console.log(`📸 Image upload enabled`);
-  console.log(`💬 Chat enabled`);
-  console.log(`📱 SMS notifications enabled (MNotify)`);
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Hostels: http://localhost:${PORT}/api/hostels`);
+  console.log(`Users: http://localhost:${PORT}/api/users`);
+  console.log(`Auth: http://localhost:${PORT}/api/auth`);
+  console.log(`Bookings: http://localhost:${PORT}/api/my-bookings`);
+  console.log(`Admin booking management enabled`);
+  console.log(`Image upload enabled`);
+  console.log(`Chat enabled`);
+  console.log(`SMS notifications enabled (MNotify)`);
 });
