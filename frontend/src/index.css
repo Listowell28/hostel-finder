@@ -1,3 +1,30 @@
-@tailwind base;
+/* REMOVE @tailwind base; to stop it from breaking MUI layouts */
+
 @tailwind components;
 @tailwind utilities;
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background: #f0f2f5;
+}
+
+#root {
+  width: 100vw; /* Forces the app to stretch exactly to the screen edges */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}

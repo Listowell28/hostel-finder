@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Container, Typography, Button, Paper, Box, TextField, 
+  Typography, Button, Paper, Box, TextField, 
   Card, CardContent, Grid, Dialog, DialogTitle, DialogContent, 
-  DialogActions, Alert, Chip, AppBar, Toolbar, IconButton,
-  BottomNavigation, BottomNavigationAction
+  DialogActions, Alert, BottomNavigation, BottomNavigationAction
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import HomeIcon from '@mui/icons-material/Home';
@@ -22,7 +21,7 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [user, setUser] = useState(null);
-  const [location, setLocation] = useState('Kumasi, Tanoso');
+  const [location] = useState('Kumasi, Tanoso');
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // Booking dialog states
@@ -52,10 +51,6 @@ function HomePage() {
       console.error('Error fetching hostels:', err);
       setLoading(false);
     }
-  };
-
-  const handleLogin = (userData) => {
-    setUser(userData);
   };
 
   const handleLogout = () => {
@@ -95,7 +90,8 @@ function HomePage() {
     setBookingError('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/bookings', {
+      // ✅ FIXED: Replaced hardcoded localhost with API_URL
+      const res = await fetch(`${API_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,8 +126,10 @@ function HomePage() {
   );
 
   return (
-    <Container className="min-h-screen bg-gray-50 p-0 max-w-full">
-      {/* Header */}
+    // ✅ FIXED: Box instead of Container to prevent side gaps on mobile
+    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f9fafb', pb: 10 }}>
+      
+      {/* ✅ FIXED: Header Box is now properly closed */}
       <Box className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 rounded-b-3xl shadow-lg">
         <Box className="flex justify-between items-center">
           <Box>
@@ -139,7 +137,7 @@ function HomePage() {
               Current Location
             </Typography>
             <Typography variant="h6" className="font-bold flex items-center gap-1">
-               {location}
+               📍 {location}
             </Typography>
           </Box>
           {user ? (
@@ -152,7 +150,7 @@ function HomePage() {
               </Button>
             </Box>
           ) : (
-            <Link to="/login">
+            <Link to="/login" style={{ textDecoration: 'none' }}>
               <Button variant="contained" size="small" className="bg-white text-blue-600">
                 Login
               </Button>
@@ -210,10 +208,10 @@ function HomePage() {
                         {hostel.name}
                       </Typography>
                       <Typography variant="body2" className="text-gray-600 text-xs">
-                         {hostel.city}
+                         📍 {hostel.city}
                       </Typography>
                       <Typography variant="body2" className="text-gray-600 text-xs">
-                         ${hostel.price_per_month}/month
+                         GH₵{hostel.price_per_year}/year
                       </Typography>
                       <Typography variant="body2" className="text-gray-500 text-xs mt-1 line-clamp-2">
                         {hostel.description || 'No description available'}
@@ -270,7 +268,7 @@ function HomePage() {
           
           <Box className="mt-2 space-y-4">
             <Typography variant="body2" className="text-gray-600">
-               Price: ${bookingDialog?.price_per_month}/month
+               Price: GH₵{bookingDialog?.price_per_year}/year
             </Typography>
             
             <TextField
@@ -317,7 +315,7 @@ function HomePage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box> // ✅ FIXED: Closed with Box, not Container
   );
 }
 
@@ -326,6 +324,13 @@ function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Sync bottom nav active state with URL
+  useEffect(() => {
+    const routes = ['/', '/my-bookings', '/reviews', '/profile'];
+    const index = routes.indexOf(location.pathname);
+    if (index !== -1) setValue(index);
+  }, [location.pathname]);
+
   const handleNavigation = (newValue) => {
     setValue(newValue);
     const routes = ['/', '/my-bookings', '/reviews', '/profile'];
@@ -333,20 +338,29 @@ function MainLayout() {
   };
 
   return (
-    <Box className="min-h-screen bg-gray-50">
+    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f9fafb' }}>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/add-hostel" element={<AddHostel />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/profile" element={<div>Profile Page</div>} />
-        <Route path="/reviews" element={<div>Reviews Page</div>} />
+        <Route path="/profile" element={<div className="p-4">Profile Page</div>} />
+        <Route path="/reviews" element={<div className="p-4">Reviews Page</div>} />
       </Routes>
 
-      {/* Bottom Navigation */}
+      {/* ✅ FIXED: Bottom Navigation stretches properly and stays on top */}
       <Paper 
-        sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}
+        sx={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0,
+          width: '100vw',
+          zIndex: 1000,
+          margin: 0,
+          padding: 0
+        }}
         elevation={3}
         className="rounded-t-2xl"
       >
