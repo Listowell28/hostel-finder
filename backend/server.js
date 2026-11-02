@@ -13,6 +13,12 @@ const multer = require('multer');
 const fs = require('fs');
 const sgMail = require('@sendgrid/mail');
 
+
+// Add this right after: const app = express();
+const loginAttempts = {}; 
+const MAX_ATTEMPTS = 3;
+const LOCK_TIME = 15 * 60 * 1000; // 15 minutes lockout
+
 // SMS Imports
 const { 
   sendAdminBookingNotification,
@@ -499,17 +505,52 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
-  try {
-    const result = await loginUser(email, password);
-    res.json(result);
-  } catch (err) {
-    res.status(401).json({ error: err.message });
-  }
-});
+  const key = email.toLowerCase().trim();
+  const now = Date.now();
 
-// Get current user
-app.get('/api/auth/me', authenticate, async (req, res) => {
-  res.json(req.user);
+  // 1. Check if the user is currently locked out
+  if (loginAttempts[key] && loginAttempts[key].lockedUntil > now) {
+    const minutesLeft = Math.ceil((loginAttempts[key].lockedUntil - now) / 60000);
+    return res.status(429).json({ 
+      error: `Too many failed attempts. Account locked. Try again in ${minutesLeft} minute(s).` 
+    });
+  }
+
+  // 2. Clear lock if the time has passed
+  if (loginAttempts[key] && loginAttempts[key].lockedUntil && loginAttempts[key].lockedUntil <= now) {
+    delete loginAttempts[key];
+  }
+
+  try {
+    // Try to login (this uses your existing loginUser function)
+    const result = await loginUser(email, password);
+    
+    // 3. SUCCESS: Reset the attempts
+    if (loginAttempts[key]) delete loginAttempts[key];
+    res.json(result);
+
+  } catch (err) {
+    // 4. FAILURE: Record the attempt
+    if (!loginAttempts[key]) {
+      loginAttempts[key] = { attempts: 1, lockedUntil: null };
+    } else {
+      loginAttempts[key].attempts += 1;
+    }
+
+    // 5. Lock the account if 3 attempts are reached
+    if (loginAttempts[key].attempts >= MAX_ATTEMPTS) {
+      loginAttempts[key].lockedUntil = now + LOCK_TIME;
+      return res.status(429).json({ 
+        error: `Too many failed attempts. Account locked for 15 minutes.` 
+      });
+    }
+
+    // Return specific error with attempts left
+    const attemptsLeft = MAX_ATTEMPTS - loginAttempts[key].attempts;
+    res.status(401).json({ 
+      error: `Invalid credentials. ${attemptsLeft} attempt(s) left before lockout.` 
+    });
+  }
 });
 
 // ============ SOCIAL LOGIN ROUTES ============
