@@ -599,6 +599,21 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
+// ✅ NEW: Public route to get rooms for a hostel (for students)
+app.get('/api/hostels/:id/rooms', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM rooms WHERE hostel_id = $1 ORDER BY created_at DESC',
+      [id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching rooms:', err);
+    res.status(500).json({ error: 'Failed to fetch rooms' });
+  }
+});
+
 // Create hostel with room prices
 app.post('/api/hostels', authenticate, async (req, res) => {
   const { 
