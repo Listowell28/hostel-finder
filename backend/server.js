@@ -857,6 +857,7 @@ app.put('/api/users/profile', authenticate, async (req, res) => {
 });
 
 // ============ BOOKING ROUTES ============
+// (Handled entirely by bookingRoutes.js, do not duplicate them here)
 
 // Get user's bookings
 app.get('/api/my-bookings', authenticate, async (req, res) => {
