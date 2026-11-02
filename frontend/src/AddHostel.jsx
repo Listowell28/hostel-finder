@@ -3,7 +3,7 @@ import {
   Box, Paper, TextField, Button, Typography, Alert,
   Grid, Chip, Divider, CircularProgress, FormControl,
   FormLabel, RadioGroup, FormControlLabel, Radio,
-  Switch, FormControlLabel as SwitchLabel
+  Switch, InputAdornment
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -29,6 +29,14 @@ function AddHostel({ onHostelAdded }) {
     available: true,
     category: 'hostel'
   });
+
+  // ✅ ROOM PRICES STATE
+  const [roomPrices, setRoomPrices] = useState({
+    price_1_in_room: '',
+    price_2_in_room: '',
+    price_3_in_room: ''
+  });
+
   const [images, setImages] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -68,7 +76,19 @@ function AddHostel({ onHostelAdded }) {
       amenities: amenitiesArray,
       images: images,
       available: form.available !== false,
-      category: form.category
+      category: form.category,
+      rooms: [{
+        name: form.name + ' Room',
+        type: 'standard',
+        price_1_in_room: parseFloat(roomPrices.price_1_in_room) || 0,
+        price_2_in_room: parseFloat(roomPrices.price_2_in_room) || 0,
+        price_3_in_room: parseFloat(roomPrices.price_3_in_room) || 0,
+        capacity: 3,
+        available: 10,
+        total_rooms: 10,
+        amenities: amenitiesArray,
+        images: images
+      }]
     };
 
     console.log(' Sending:', hostelData);
@@ -98,6 +118,11 @@ function AddHostel({ onHostelAdded }) {
         amenities: '',
         available: true,
         category: 'hostel'
+      });
+      setRoomPrices({
+        price_1_in_room: '',
+        price_2_in_room: '',
+        price_3_in_room: ''
       });
       setImages([]);
       if (onHostelAdded) onHostelAdded();
@@ -242,6 +267,52 @@ function AddHostel({ onHostelAdded }) {
                 value={form.price_per_year}
                 onChange={handleChange}
                 required
+              />
+            </Grid>
+
+            {/* ✅ ROOM PRICES BY TYPE SECTION */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#1a1a2e' }}>
+                Room Prices by Type
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                label="1 in a room (GH₵/year)"
+                type="number"
+                value={roomPrices.price_1_in_room}
+                onChange={(e) => setRoomPrices({ ...roomPrices, price_1_in_room: e.target.value })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">🛏️</InputAdornment>
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                label="2 in a room (GH₵/year)"
+                type="number"
+                value={roomPrices.price_2_in_room}
+                onChange={(e) => setRoomPrices({ ...roomPrices, price_2_in_room: e.target.value })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">🛏️🛏️</InputAdornment>
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                label="3 in a room (GH₵/year)"
+                type="number"
+                value={roomPrices.price_3_in_room}
+                onChange={(e) => setRoomPrices({ ...roomPrices, price_3_in_room: e.target.value })}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">🛏️🛏️🛏️</InputAdornment>
+                }}
               />
             </Grid>
 

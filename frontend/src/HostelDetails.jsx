@@ -35,7 +35,7 @@ function HostelDetails() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   const [hostel, setHostel] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,9 @@ function HostelDetails() {
   // ✅ BOOKING STATE
   const [bookingDialog, setBookingDialog] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [roomType, setRoomType] = useState('');
+  const [roomType, setRoomType] = useState('1 in a room');
+  const [selectedPrice, setSelectedPrice] = useState(0);
+  const [selectedRoomId, setSelectedRoomId] = useState(null);   // ✅ NEW
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -85,6 +87,10 @@ function HostelDetails() {
       if (!res.ok) throw new Error('No rooms found');
       const data = await res.json();
       setRooms(data);
+      if (data.length > 0) {
+        setSelectedPrice(getRoomPrice('1 in a room', data[0]));
+        setSelectedRoomId(data[0].id);                        // ✅ NEW
+      }
       setLoadingRooms(false);
     } catch (err) {
       console.error('Error fetching rooms:', err);
@@ -92,15 +98,58 @@ function HostelDetails() {
     }
   };
 
-  // ✅ OPEN BOOKING DIALOG
-  const handleBookNow = () => {
+  // Get price based on room type
+  const getRoomPrice = (type, room) => {
+    if (!room) return hostel?.price_per_year || 0;
+    switch (type) {
+      case '1 in a room':
+        return room.price_1_in_room || room.price || 0;
+      case '2 in a room':
+        return room.price_2_in_room || room.price || 0;
+      case '3 in a room':
+        return room.price_3_in_room || room.price || 0;
+      default:
+        return room.price || hostel?.price_per_year || 0;
+    }
+  };
+
+  // ✅ Reusable reset
+  const resetBookingState = () => {
+    setPhoneNumber('');
+    setRoomType('1 in a room');
+    setBookingError('');
+    setBookingSuccess('');
+    if (rooms.length > 0) {
+      setSelectedPrice(getRoomPrice('1 in a room', rooms[0]));
+      setSelectedRoomId(rooms[0].id);
+    } else {
+      setSelectedPrice(hostel?.price_per_year || 0);
+      setSelectedRoomId(null);
+    }
+  };
+
+  // ✅ OPEN BOOKING DIALOG (optionally preselected room)
+  const handleBookNow = (room = null) => {
     if (!user) {
       navigate('/login');
       return;
     }
     setBookingDialog(true);
+
+    const targetRoom = room || rooms[0];
+
+    if (targetRoom) {
+      const defaultType = '1 in a room';
+      setRoomType(defaultType);
+      setSelectedPrice(getRoomPrice(defaultType, targetRoom));
+      setSelectedRoomId(targetRoom.id);
+    } else {
+      setRoomType('1 in a room');
+      setSelectedPrice(hostel?.price_per_year || 0);
+      setSelectedRoomId(null);
+    }
+
     setPhoneNumber('');
-    setRoomType('');
     setBookingError('');
     setBookingSuccess('');
   };
@@ -145,8 +194,10 @@ function HostelDetails() {
         },
         body: JSON.stringify({
           hostel_id: hostel.id,
+          room_id: selectedRoomId,       // ✅ NEW: which room record
           phone_number: phoneNumber,
           room_type: roomType,
+          total_price: selectedPrice,    // ✅ FIXED (was `price`)
           guests: guestsCount
         })
       });
@@ -157,8 +208,7 @@ function HostelDetails() {
       setBookingSuccess('✅ Booking confirmed!');
       setTimeout(() => {
         setBookingDialog(false);
-        setPhoneNumber('');
-        setRoomType('');
+        resetBookingState();
         navigate('/my-bookings');
       }, 1500);
 
@@ -169,7 +219,7 @@ function HostelDetails() {
     }
   };
 
-  // ✅ HANDLE IMAGE UPLOAD
+  // ✅ HANDLE IMAGE UPLOAD (unchanged)
   const handleImageUpload = async (event) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -200,16 +250,13 @@ function HostelDetails() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-      // Get image URLs from response
       const imageUrls = data.imageUrls || data.images?.map(img => img.url) || [];
-      
-      // Update hostel with new images
+
       const updatedHostel = {
         ...hostel,
         images: [...(hostel.images || []), ...imageUrls]
       };
 
-      // Save to database
       const updateRes = await fetch(`${API_URL}/api/hostels/${hostel.id}`, {
         method: 'PUT',
         headers: {
@@ -224,11 +271,11 @@ function HostelDetails() {
       if (!updateRes.ok) throw new Error('Failed to update hostel');
 
       setHostel(updatedHostel);
-      alert(' Images uploaded successfully!');
+      alert('Images uploaded successfully!');
 
     } catch (err) {
       setUploadError(err.message);
-      alert(' Upload failed: ' + err.message);
+      alert('Upload failed: ' + err.message);
     } finally {
       setUploadingImages(false);
       event.target.value = '';
@@ -358,7 +405,7 @@ function HostelDetails() {
                 (user.role === 'student' || user.role === 'admin' || user.role === 'owner') && (
                   <Button
                     variant="contained"
-                    onClick={handleBookNow}
+                    onClick={() => handleBookNow()}
                     disabled={hostel.available === false}
                     sx={{
                       bgcolor: hostel.available !== false ? '#e94560' : '#666',
@@ -392,7 +439,7 @@ function HostelDetails() {
 
         {/* Rooms Section */}
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-           Available Rooms
+          Available Rooms
         </Typography>
 
         {loadingRooms ? (
@@ -407,70 +454,80 @@ function HostelDetails() {
           </Paper>
         ) : (
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            {rooms.map((room) => (
-              <Grid item xs={12} sm={6} md={4} key={room.id}>
-                <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.12)' } }}>
-                  {room.images && room.images.length > 0 ? (
-                    <img src={room.images[0]} alt={room.name} style={{ width: '100%', height: 150, objectFit: 'cover' }} />
-                  ) : (
-                    <Box sx={{ width: '100%', height: 150, bgcolor: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <BedIcon sx={{ fontSize: 48, color: '#8892b0' }} />
-                    </Box>
-                  )}
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem' }}>{room.name}</Typography>
-                      <Chip label={getRoomTypeLabel(room.type)} size="small" color={getRoomTypeColor(room.type)} sx={{ fontSize: '0.65rem' }} />
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <PeopleIcon sx={{ fontSize: 14, color: '#8892b0' }} />
-                      <Typography variant="caption" sx={{ color: '#8892b0' }}>Capacity: {room.capacity} guests</Typography>
-                    </Box>
-                    <Typography variant="h6" sx={{ color: '#e94560', fontWeight: 700, mt: 1 }}>
-                      GH₵{room.price}
-                      <Typography variant="caption" sx={{ color: '#8892b0', fontWeight: 400 }}>/night</Typography>
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <CheckCircleIcon sx={{ fontSize: 14, color: room.available > 0 ? '#4caf50' : '#e94560' }} />
-                      <Typography variant="caption" sx={{ color: room.available > 0 ? '#4caf50' : '#e94560' }}>
-                        {room.available > 0 ? `${room.available} rooms available` : 'Fully Booked'}
-                      </Typography>
-                    </Box>
-                    {room.amenities && room.amenities.length > 0 && (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                        {room.amenities.slice(0, 3).map((a, i) => (
-                          <Chip key={i} label={a} size="small" sx={{ bgcolor: '#f0f2f5', fontSize: '0.6rem' }} />
-                        ))}
-                        {room.amenities.length > 3 && (
-                          <Chip label={`+${room.amenities.length - 3}`} size="small" sx={{ bgcolor: '#f0f2f5', fontSize: '0.6rem' }} />
-                        )}
+            {rooms.map((room) => {
+              // ✅ FIXED: display the actual room-type prices, not just room.price
+              const price1 = getRoomPrice('1 in a room', room);
+              const price2 = getRoomPrice('2 in a room', room);
+              const price3 = getRoomPrice('3 in a room', room);
+
+              return (
+                <Grid item xs={12} sm={6} md={4} key={room.id}>
+                  <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.12)' } }}>
+                    {room.images && room.images.length > 0 ? (
+                      <img src={room.images[0]} alt={room.name} style={{ width: '100%', height: 150, objectFit: 'cover' }} />
+                    ) : (
+                      <Box sx={{ width: '100%', height: 150, bgcolor: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <BedIcon sx={{ fontSize: 48, color: '#8892b0' }} />
                       </Box>
                     )}
-                    {room.available > 0 && (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
-                      <Button 
-                        fullWidth 
-                        variant="contained" 
-                        size="small" 
-                        sx={{ mt: 2, bgcolor: '#e94560', borderRadius: 50, '&:hover': { bgcolor: '#c73652' } }} 
-                        onClick={handleBookNow}
-                      >
-                        Book This Room
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem' }}>{room.name}</Typography>
+                        <Chip label={getRoomTypeLabel(room.type)} size="small" color={getRoomTypeColor(room.type)} sx={{ fontSize: '0.65rem' }} />
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                        <PeopleIcon sx={{ fontSize: 14, color: '#8892b0' }} />
+                        <Typography variant="caption" sx={{ color: '#8892b0' }}>Capacity: {room.capacity} guests</Typography>
+                      </Box>
+
+                      {/* ✅ Show all three prices */}
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
+                          From <strong style={{ color: '#e94560' }}>GH₵{Math.min(price1, price2, price3)}</strong> / year
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#8892b0', display: 'block', mt: 0.5 }}>
+                          1/room: GH₵{price1} · 2/room: GH₵{price2} · 3/room: GH₵{price3}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <CheckCircleIcon sx={{ fontSize: 14, color: room.available > 0 ? '#4caf50' : '#e94560' }} />
+                        <Typography variant="caption" sx={{ color: room.available > 0 ? '#4caf50' : '#e94560' }}>
+                          {room.available > 0 ? `${room.available} rooms available` : 'Fully Booked'}
+                        </Typography>
+                      </Box>
+                      {room.amenities && room.amenities.length > 0 && (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                          {room.amenities.slice(0, 3).map((a, i) => (
+                            <Chip key={i} label={a} size="small" sx={{ bgcolor: '#f0f2f5', fontSize: '0.6rem' }} />
+                          ))}
+                        </Box>
+                      )}
+                      {room.available > 0 && (user?.role === 'student' || user?.role === 'admin' || user?.role === 'owner') && (
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="small"
+                          sx={{ mt: 2, bgcolor: '#e94560', borderRadius: 50, '&:hover': { bgcolor: '#c73652' } }}
+                          onClick={() => handleBookNow(room)}   // ✅ pass this specific room
+                        >
+                          Book This Room
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
           </Grid>
         )}
 
-        {/* ✅ IMAGE GALLERY WITH UPLOAD BUTTON */}
+        {/* Hostel Images */}
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-           Hostel Images
+          Hostel Images
         </Typography>
-        
+
         <Box sx={{ mb: 3 }}>
-          {/* Upload Button */}
           {user && (user.role === 'owner' || user.role === 'admin') && (
             <Box sx={{ mb: 2 }}>
               <Button
@@ -502,34 +559,33 @@ function HostelDetails() {
             </Box>
           )}
 
-          {/* Image Grid */}
           {hostel.images && hostel.images.length > 0 ? (
             <ImageList cols={isMobile ? 2 : 3} rowHeight={180} gap={12} sx={{ borderRadius: 3, overflow: 'hidden' }}>
               {hostel.images.map((image, index) => {
-                const imageUrl = image && image.startsWith('/uploads') 
-                  ? `${API_URL}${image}` 
+                const imageUrl = image && image.startsWith('/uploads')
+                  ? `${API_URL}${image}`
                   : image;
-                
+
                 return (
-                  <ImageListItem 
-                    key={index} 
-                    onClick={() => handleImageClick(index)} 
-                    sx={{ 
-                      cursor: 'pointer', 
-                      overflow: 'hidden', 
-                      borderRadius: 2, 
+                  <ImageListItem
+                    key={index}
+                    onClick={() => handleImageClick(index)}
+                    sx={{
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      borderRadius: 2,
                       transition: 'transform 0.3s ease',
-                      '&:hover': { 
-                        transform: 'scale(1.05)', 
+                      '&:hover': {
+                        transform: 'scale(1.05)',
                         zIndex: 1,
                         boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
-                      } 
+                      }
                     }}
                   >
-                    <img 
-                      src={imageUrl} 
-                      alt={`${hostel.name} ${index + 1}`} 
-                      style={{ width: '100%', height: 180, objectFit: 'cover' }} 
+                    <img
+                      src={imageUrl}
+                      alt={`${hostel.name} ${index + 1}`}
+                      style={{ width: '100%', height: 180, objectFit: 'cover' }}
                       loading="lazy"
                       onError={(e) => {
                         e.target.src = 'https://placehold.co/600x400/e94560/white?text=No+Image';
@@ -588,18 +644,18 @@ function HostelDetails() {
         </Paper>
 
         <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Button 
-            variant="outlined" 
-            onClick={() => navigate('/')} 
-            sx={{ 
-              borderRadius: 50, 
-              px: 4, 
-              borderColor: '#e94560', 
-              color: '#e94560', 
-              '&:hover': { 
-                bgcolor: 'rgba(233,69,96,0.05)', 
-                borderColor: '#c73652' 
-              } 
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/')}
+            sx={{
+              borderRadius: 50,
+              px: 4,
+              borderColor: '#e94560',
+              color: '#e94560',
+              '&:hover': {
+                bgcolor: 'rgba(233,69,96,0.05)',
+                borderColor: '#c73652'
+              }
             }}
           >
             Back to Home
@@ -612,10 +668,7 @@ function HostelDetails() {
         open={bookingDialog}
         onClose={() => {
           setBookingDialog(false);
-          setPhoneNumber('');
-          setRoomType('');
-          setBookingError('');
-          setBookingSuccess('');
+          resetBookingState();
         }}
         maxWidth="sm"
         fullWidth
@@ -626,7 +679,6 @@ function HostelDetails() {
             maxHeight: '90vh',
             position: 'fixed',
             bottom: { xs: 0, sm: 'auto' },
-            top: { xs: 'auto', sm: 'auto' },
             width: '100%'
           }
         }}
@@ -634,15 +686,15 @@ function HostelDetails() {
         <DialogTitle sx={{ color: '#1a1a2e', fontWeight: 700 }}>
           Book {hostel?.name}
         </DialogTitle>
-        
+
         <DialogContent>
           {bookingError && <Alert severity="error" sx={{ mb: 2 }}>{bookingError}</Alert>}
           {bookingSuccess && <Alert severity="success" sx={{ mb: 2 }}>{bookingSuccess}</Alert>}
-          
+
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" sx={{ color: '#8892b0' }}>
-                Price: GH₵{hostel?.price_per_year}/year
+                Selected Price: <strong style={{ color: '#e94560' }}>GH₵{selectedPrice}</strong>/year
               </Typography>
               <Chip
                 label={hostel?.available !== false ? "Available" : "Unavailable"}
@@ -662,61 +714,65 @@ function HostelDetails() {
               required
             />
 
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+            {/* Room Type Selector Section */}
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
                 Select Room Type
               </Typography>
-              <Grid container spacing={1}>
-                {['1 in a room', '2 in a room', '3 in a room'].map((type) => (
-                  <Grid item xs={4} key={type}>
-                    <Card
-                      onClick={() => setRoomType(type)}
-                      sx={{
-                        cursor: 'pointer',
-                        border: roomType === type ? '2px solid #e94560' : '1px solid #ddd',
-                        borderRadius: 2,
-                        p: 2,
-                        textAlign: 'center',
-                        transition: 'all 0.3s ease',
-                        bgcolor: roomType === type ? 'rgba(233,69,96,0.05)' : 'white',
-                        '&:hover': {
-                          borderColor: '#e94560',
-                          transform: 'scale(1.02)'
-                        }
-                      }}
-                    >
-                      <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
-                        {type === '1 in a room' ? '' : type === '2 in a room' ? '' : ''}
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {type}
-                      </Typography>
-                      {roomType === type && (
-                        <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
-                          Selected
+
+              <Grid container spacing={2}>
+                {['1 in a room', '2 in a room', '3 in a room'].map((type) => {
+                  const price = getRoomPrice(type, rooms[0]);
+                  return (
+                    <Grid item xs={12} sm={4} key={type}>
+                      <Card
+                        onClick={() => {
+                          setRoomType(type);
+                          setSelectedPrice(price);
+                          if (rooms[0]) setSelectedRoomId(rooms[0].id);
+                        }}
+                        sx={{
+                          cursor: 'pointer',
+                          border: roomType === type ? '2px solid #e94560' : '1px solid #ddd',
+                          borderRadius: 2,
+                          p: 2,
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease',
+                          bgcolor: roomType === type ? 'rgba(233,69,96,0.05)' : 'white',
+                          '&:hover': {
+                            borderColor: '#e94560',
+                            transform: 'scale(1.02)'
+                          }
+                        }}
+                      >
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
+                          {type === '1 in a room' ? '🛏️' : type === '2 in a room' ? '🛏️🛏️' : '🛏️🛏️🛏️'}
                         </Typography>
-                      )}
-                    </Card>
-                  </Grid>
-                ))}
+                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                          {type}
+                        </Typography>
+                        <Typography variant="h6" sx={{ color: '#e94560', fontWeight: 700 }}>
+                          GH₵{price}/year
+                        </Typography>
+                        {roomType === type && (
+                          <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
+                            Selected
+                          </Typography>
+                        )}
+                      </Card>
+                    </Grid>
+                  );
+                })}
               </Grid>
-              {!roomType && (
-                <Typography variant="caption" sx={{ color: '#e94560', display: 'block', mt: 1 }}>
-                  Please select a room type
-                </Typography>
-              )}
             </Box>
           </Box>
         </DialogContent>
-        
+
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button
             onClick={() => {
               setBookingDialog(false);
-              setPhoneNumber('');
-              setRoomType('');
-              setBookingError('');
-              setBookingSuccess('');
+              resetBookingState();
             }}
             sx={{ color: '#8892b0' }}
           >
@@ -741,14 +797,14 @@ function HostelDetails() {
 
       {/* Image Gallery */}
       {hostel.images && hostel.images.length > 0 && (
-        <ImageGallery 
-          images={hostel.images.map(img => 
+        <ImageGallery
+          images={hostel.images.map(img =>
             img && img.startsWith('/uploads') ? `${API_URL}${img}` : img
-          )} 
-          open={galleryOpen} 
-          onClose={() => setGalleryOpen(false)} 
-          hostelName={hostel.name} 
-          initialIndex={selectedImageIndex} 
+          )}
+          open={galleryOpen}
+          onClose={() => setGalleryOpen(false)}
+          hostelName={hostel.name}
+          initialIndex={selectedImageIndex}
         />
       )}
     </Box>

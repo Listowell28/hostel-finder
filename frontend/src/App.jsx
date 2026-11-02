@@ -369,6 +369,30 @@ const HostelCard = ({ hostel }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
+   // ✅ ROOM TYPE STATE - ADDED
+  const [selectedRoomType, setSelectedRoomType] = useState('1 in a room');
+
+  // ✅ GET PRICE BASED ON ROOM TYPE - ADDED
+  const getRoomPrice = (roomType) => {
+    if (!hostel.rooms || hostel.rooms.length === 0) {
+      return hostel.price_per_year || 0;
+    }
+    
+    const room = hostel.rooms[0]; // Use first room for display
+    switch(roomType) {
+      case '1 in a room':
+        return room.price_1_in_room || room.price * 1.5;
+      case '2 in a room':
+        return room.price_2_in_room || room.price;
+      case '3 in a room':
+        return room.price_3_in_room || room.price * 0.7;
+      default:
+        return room.price || 0;
+    }
+  };
+
+  const currentPrice = getRoomPrice(selectedRoomType);
+
   const getImageUrl = () => {
     if (hostel.images && hostel.images.length > 0) {
       const img = hostel.images[0];
@@ -637,7 +661,7 @@ const HostelCard = ({ hostel }) => {
           {hostel.rating || '4.9'}
         </Box>
 
-        {/* ✅ PRICE BADGE - Bottom Left */}
+                {/* ✅ PRICE BADGE - DYNAMIC BASED ON ROOM TYPE */}
         <Box
           sx={{
             position: 'absolute',
@@ -658,7 +682,7 @@ const HostelCard = ({ hostel }) => {
             zIndex: 5
           }}
         >
-          GH₵{hostel.price_per_year || 100}
+          GH₵{Math.round(currentPrice)}
           <Typography
             component="span"
             sx={{
@@ -797,6 +821,39 @@ const HostelCard = ({ hostel }) => {
             )}
           </Box>
         </Box>
+
+                  {/* ✅ ROOM TYPE SELECTOR - ADDED */}
+          {hostel.rooms && hostel.rooms.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 0.5, mb: 1.5, flexWrap: 'wrap' }}>
+              {['1 in a room', '2 in a room', '3 in a room'].map((type) => (
+                <Chip
+                  key={type}
+                  label={type.replace(' in a room', '')}
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setSelectedRoomType(type);
+                  }}
+                  sx={{
+                    height: 22,
+                    fontSize: '0.6rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    bgcolor: selectedRoomType === type
+                      ? '#e94560'
+                      : darkMode ? 'rgba(255,255,255,0.08)' : '#f5f7fa',
+                    color: selectedRoomType === type
+                      ? 'white'
+                      : darkMode ? '#b0b0b0' : '#6b7a8f',
+                    '&:hover': {
+                      bgcolor: selectedRoomType === type ? '#c73652' : 'rgba(233,69,96,0.1)'
+                    }
+                  }}
+                />
+              ))}
+            </Box>
+          )}
 
         {/* Book Now Button */}
         {user ? (

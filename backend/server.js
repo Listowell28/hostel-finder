@@ -589,13 +589,15 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
-// Create hostel
+// Create hostel with room prices  ← ⬅️ REPLACED
 app.post('/api/hostels', authenticate, async (req, res) => {
-  const { 
-    name, address, city, state, zip_code, description, 
-    price_per_year, amenities, images, available, category 
+  const {
+    name, address, city, state, zip_code, description,
+    price_per_year, amenities, images, available, category,
+    rooms  // ← Now includes room prices
   } = req.body;
 
+  // Validation
   if (!name || !address || !city || !price_per_year) {
     return res.status(400).json({ error: 'Name, address, city, and price are required' });
   }
@@ -604,23 +606,58 @@ app.post('/api/hostels', authenticate, async (req, res) => {
     return res.status(403).json({ error: 'Only hostel owners or admins can add hostels' });
   }
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+
+    // 1. Insert the hostel
+    const result = await client.query(
       `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images, available, category)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
-        name, address, city, state, zip_code, description, 
+        name, address, city, state, zip_code, description,
         parseFloat(price_per_year), amenities || [], req.user.id,
         images || [], available !== false, category || 'hostel'
       ]
     );
-    
-    console.log('Hostel created:', result.rows[0].name, 'Category:', result.rows[0].category);
+
+    const hostelId = result.rows[0].id;
+
+    // 2. Insert rooms with per-occupancy prices
+    if (rooms && Array.isArray(rooms) && rooms.length > 0) {
+      for (const room of rooms) {
+        await client.query(
+          `INSERT INTO rooms (hostel_id, name, type, price_1_in_room, price_2_in_room, price_3_in_room, capacity, available, total_rooms, description, amenities, images)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [
+            hostelId,
+            room.name || 'Standard Room',
+            room.type || 'standard',
+            parseFloat(room.price_1_in_room) || 0,
+            parseFloat(room.price_2_in_room) || 0,
+            parseFloat(room.price_3_in_room) || 0,
+            parseInt(room.capacity) || 3,
+            parseInt(room.available) || 10,
+            parseInt(room.total_rooms) || 10,
+            room.description || '',
+            room.amenities || [],
+            room.images || []
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    console.log('Hostel created:', result.rows[0].name, 'with', rooms?.length || 0, 'rooms');
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error creating hostel:', err);
     res.status(500).json({ error: 'Failed to create hostel' });
+  } finally {
+    client.release();
   }
 });
 
