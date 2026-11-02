@@ -1,7 +1,7 @@
 {
   "name": "HostelFinder - Find Your Perfect Hostel",
   "short_name": "HostelFinder",
-  "description": "Find and book affordable hostels in Kumasi, Ghana",
+  "description": "Find and book affordable hostels arround USTED-K CAMPUS, Kumasi-Ghana",
   "start_url": "/",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone"],

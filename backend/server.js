@@ -589,42 +589,51 @@ app.get('/api/hostels/:id', async (req, res) => {
   }
 });
 
-// Create hostel with room prices  ← ⬅️ REPLACED
+// Create hostel with room prices
 app.post('/api/hostels', authenticate, async (req, res) => {
-  const {
-    name, address, city, state, zip_code, description,
-    price_per_year, amenities, images, available, category,
+  const { 
+    name, address, city, state, zip_code, description, 
+    amenities, images, available, category,
     rooms  // ← Now includes room prices
   } = req.body;
 
-  // Validation
-  if (!name || !address || !city || !price_per_year) {
-    return res.status(400).json({ error: 'Name, address, city, and price are required' });
+  // 1. Validation (No longer requiring price_per_year from frontend)
+  if (!name || !address || !city) {
+    return res.status(400).json({ error: 'Name, address, and city are required' });
   }
 
   if (req.user.role !== 'admin' && req.user.role !== 'owner') {
     return res.status(403).json({ error: 'Only hostel owners or admins can add hostels' });
   }
 
+  // 2. Automatically calculate the starting/base price from the rooms
+  let calculatedBasePrice = 0;
+  if (rooms && Array.isArray(rooms) && rooms.length > 0) {
+    const room = rooms[0];
+    // Use the 1-in-a-room price, or 2-in-a-room, or 3-in-a-room, whichever is set first
+    calculatedBasePrice = parseFloat(room.price_1_in_room || room.price_2_in_room || room.price_3_in_room || 0);
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Insert the hostel
+    // 3. Insert the hostel with the calculated price
     const result = await client.query(
       `INSERT INTO hostels (name, address, city, state, zip_code, description, price_per_year, amenities, owner_id, images, available, category)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         name, address, city, state, zip_code, description,
-        parseFloat(price_per_year), amenities || [], req.user.id,
+        calculatedBasePrice, // ← Using the calculated price here
+        amenities || [], req.user.id,
         images || [], available !== false, category || 'hostel'
       ]
     );
 
     const hostelId = result.rows[0].id;
 
-    // 2. Insert rooms with per-occupancy prices
+    // 4. Insert rooms with per-occupancy prices
     if (rooms && Array.isArray(rooms) && rooms.length > 0) {
       for (const room of rooms) {
         await client.query(
@@ -650,7 +659,7 @@ app.post('/api/hostels', authenticate, async (req, res) => {
 
     await client.query('COMMIT');
 
-    console.log('Hostel created:', result.rows[0].name, 'with', rooms?.length || 0, 'rooms');
+    console.log('Hostel created:', result.rows[0].name, 'Base Price:', calculatedBasePrice);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');

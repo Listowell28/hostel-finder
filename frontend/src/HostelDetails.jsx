@@ -18,9 +18,7 @@ import {
   FitnessCenter as FitnessCenterIcon,
   Kitchen as KitchenIcon,
   LocalParking as ParkingIcon,
-  Star as StarIcon,
   Share as ShareIcon,
-  ZoomIn as ZoomInIcon,
   People as PeopleIcon,
   CheckCircle as CheckCircleIcon,
   AddPhotoAlternate as AddPhotoIcon
@@ -50,7 +48,7 @@ function HostelDetails() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [roomType, setRoomType] = useState('1 in a room');
   const [selectedPrice, setSelectedPrice] = useState(0);
-  const [selectedRoomId, setSelectedRoomId] = useState(null);   // ✅ NEW
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -89,7 +87,7 @@ function HostelDetails() {
       setRooms(data);
       if (data.length > 0) {
         setSelectedPrice(getRoomPrice('1 in a room', data[0]));
-        setSelectedRoomId(data[0].id);                        // ✅ NEW
+        setSelectedRoomId(data[0].id);
       }
       setLoadingRooms(false);
     } catch (err) {
@@ -98,18 +96,18 @@ function HostelDetails() {
     }
   };
 
-  // Get price based on room type
+  // ✅ FIXED: Only returns the specific room prices (no random fallbacks)
   const getRoomPrice = (type, room) => {
-    if (!room) return hostel?.price_per_year || 0;
+    if (!room) return 0; // No room data, return 0 instead of base hostel price
     switch (type) {
       case '1 in a room':
-        return room.price_1_in_room || room.price || 0;
+        return parseFloat(room.price_1_in_room) || 0;
       case '2 in a room':
-        return room.price_2_in_room || room.price || 0;
+        return parseFloat(room.price_2_in_room) || 0;
       case '3 in a room':
-        return room.price_3_in_room || room.price || 0;
+        return parseFloat(room.price_3_in_room) || 0;
       default:
-        return room.price || hostel?.price_per_year || 0;
+        return 0;
     }
   };
 
@@ -123,12 +121,12 @@ function HostelDetails() {
       setSelectedPrice(getRoomPrice('1 in a room', rooms[0]));
       setSelectedRoomId(rooms[0].id);
     } else {
-      setSelectedPrice(hostel?.price_per_year || 0);
+      setSelectedPrice(0);
       setSelectedRoomId(null);
     }
   };
 
-  // ✅ OPEN BOOKING DIALOG (optionally preselected room)
+  // ✅ OPEN BOOKING DIALOG
   const handleBookNow = (room = null) => {
     if (!user) {
       navigate('/login');
@@ -145,7 +143,7 @@ function HostelDetails() {
       setSelectedRoomId(targetRoom.id);
     } else {
       setRoomType('1 in a room');
-      setSelectedPrice(hostel?.price_per_year || 0);
+      setSelectedPrice(0);
       setSelectedRoomId(null);
     }
 
@@ -194,10 +192,10 @@ function HostelDetails() {
         },
         body: JSON.stringify({
           hostel_id: hostel.id,
-          room_id: selectedRoomId,       // ✅ NEW: which room record
+          room_id: selectedRoomId,
           phone_number: phoneNumber,
           room_type: roomType,
-          total_price: selectedPrice,    // ✅ FIXED (was `price`)
+          total_price: selectedPrice,
           guests: guestsCount
         })
       });
@@ -219,7 +217,7 @@ function HostelDetails() {
     }
   };
 
-  // ✅ HANDLE IMAGE UPLOAD (unchanged)
+  // ✅ HANDLE IMAGE UPLOAD
   const handleImageUpload = async (event) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -343,6 +341,18 @@ function HostelDetails() {
     );
   }
 
+  // ✅ Calculate lowest room price to display in the header
+  let startingPrice = hostel.price_per_year; // fallback
+  if (rooms.length > 0) {
+    const p1 = getRoomPrice('1 in a room', rooms[0]);
+    const p2 = getRoomPrice('2 in a room', rooms[0]);
+    const p3 = getRoomPrice('3 in a room', rooms[0]);
+    const validPrices = [p1, p2, p3].filter(p => p > 0);
+    if (validPrices.length > 0) {
+      startingPrice = Math.min(...validPrices);
+    }
+  }
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', pb: 4 }}>
       {/* Header */}
@@ -388,8 +398,9 @@ function HostelDetails() {
         <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
             <Box>
+              {/* ✅ Shows lowest room price instead of price_per_year */}
               <Typography variant="h5" sx={{ fontWeight: 700, color: '#e94560' }}>
-                GH₵{hostel.price_per_year}
+                From GH₵{startingPrice}
               </Typography>
               <Typography variant="caption" sx={{ color: '#8892b0' }}>
                 per year
@@ -455,10 +466,12 @@ function HostelDetails() {
         ) : (
           <Grid container spacing={2} sx={{ mb: 3 }}>
             {rooms.map((room) => {
-              // ✅ FIXED: display the actual room-type prices, not just room.price
               const price1 = getRoomPrice('1 in a room', room);
               const price2 = getRoomPrice('2 in a room', room);
               const price3 = getRoomPrice('3 in a room', room);
+              
+              const validPrices = [price1, price2, price3].filter(p => p > 0);
+              const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
 
               return (
                 <Grid item xs={12} sm={6} md={4} key={room.id}>
@@ -480,17 +493,31 @@ function HostelDetails() {
                         <Typography variant="caption" sx={{ color: '#8892b0' }}>Capacity: {room.capacity} guests</Typography>
                       </Box>
 
-                      {/* ✅ Show all three prices */}
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="caption" sx={{ color: '#8892b0', display: 'block' }}>
-                          From <strong style={{ color: '#e94560' }}>GH₵{Math.min(price1, price2, price3)}</strong> / year
+                      {/* ✅ Fixed to show actual room prices, removed confusing 'room.price' */}
+                      <Box sx={{ mt: 1.5 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#e94560', mb: 0.5 }}>
+                          From GH₵{minPrice} / year
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#8892b0', display: 'block', mt: 0.5 }}>
-                          1/room: GH₵{price1} · 2/room: GH₵{price2} · 3/room: GH₵{price3}
-                        </Typography>
+                        <Grid container spacing={1}>
+                          {price1 > 0 && (
+                            <Grid item>
+                              <Chip label={`1 in room: GH₵${price1}`} size="small" variant="outlined" sx={{ fontSize: '0.65rem' }} />
+                            </Grid>
+                          )}
+                          {price2 > 0 && (
+                            <Grid item>
+                              <Chip label={`2 in room: GH₵${price2}`} size="small" variant="outlined" sx={{ fontSize: '0.65rem' }} />
+                            </Grid>
+                          )}
+                          {price3 > 0 && (
+                            <Grid item>
+                              <Chip label={`3 in room: GH₵${price3}`} size="small" variant="outlined" sx={{ fontSize: '0.65rem' }} />
+                            </Grid>
+                          )}
+                        </Grid>
                       </Box>
 
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
                         <CheckCircleIcon sx={{ fontSize: 14, color: room.available > 0 ? '#4caf50' : '#e94560' }} />
                         <Typography variant="caption" sx={{ color: room.available > 0 ? '#4caf50' : '#e94560' }}>
                           {room.available > 0 ? `${room.available} rooms available` : 'Fully Booked'}
@@ -509,7 +536,7 @@ function HostelDetails() {
                           variant="contained"
                           size="small"
                           sx={{ mt: 2, bgcolor: '#e94560', borderRadius: 50, '&:hover': { bgcolor: '#c73652' } }}
-                          onClick={() => handleBookNow(room)}   // ✅ pass this specific room
+                          onClick={() => handleBookNow(room)}
                         >
                           Book This Room
                         </Button>
@@ -694,7 +721,7 @@ function HostelDetails() {
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="body2" sx={{ color: '#8892b0' }}>
-                Selected Price: <strong style={{ color: '#e94560' }}>GH₵{selectedPrice}</strong>/year
+                Selected Price: <strong style={{ color: '#e94560' }}>GH₵{selectedPrice}</strong> / year
               </Typography>
               <Chip
                 label={hostel?.available !== false ? "Available" : "Unavailable"}
@@ -752,7 +779,7 @@ function HostelDetails() {
                           {type}
                         </Typography>
                         <Typography variant="h6" sx={{ color: '#e94560', fontWeight: 700 }}>
-                          GH₵{price}/year
+                          GH₵{price} / year
                         </Typography>
                         {roomType === type && (
                           <Typography variant="caption" sx={{ color: '#e94560', display: 'block' }}>
