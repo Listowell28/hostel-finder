@@ -574,15 +574,25 @@ app.get('/api/hostels', async (req, res) => {
   }
 });
 
-// Get single hostel
+// Get single hostel WITH rooms
 app.get('/api/hostels/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT * FROM hostels WHERE id = $1', [id]);
-    if (result.rows.length === 0) {
+    // 1. Get the hostel
+    const hostelResult = await pool.query('SELECT * FROM hostels WHERE id = $1', [id]);
+    if (hostelResult.rows.length === 0) {
       return res.status(404).json({ error: 'Hostel not found' });
     }
-    res.json(result.rows[0]);
+    
+    const hostel = hostelResult.rows[0];
+
+    // 2. Get the rooms for this hostel
+    const roomsResult = await pool.query('SELECT * FROM rooms WHERE hostel_id = $1', [id]);
+    
+    // 3. Attach the rooms to the hostel object
+    hostel.rooms = roomsResult.rows;
+
+    res.json(hostel);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch hostel' });
