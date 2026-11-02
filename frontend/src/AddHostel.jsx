@@ -24,7 +24,7 @@ function AddHostel({ onHostelAdded }) {
     state: '',
     zip_code: '',
     description: '',
-    price_per_year: '',
+    // ❌ REMOVED: price_per_year
     amenities: '',
     available: true,
     category: 'hostel'
@@ -72,7 +72,7 @@ function AddHostel({ onHostelAdded }) {
       state: form.state,
       zip_code: form.zip_code,
       description: form.description,
-      price_per_year: parseFloat(form.price_per_year),
+      // ❌ REMOVED: price_per_year
       amenities: amenitiesArray,
       images: images,
       available: form.available !== false,
@@ -114,7 +114,7 @@ function AddHostel({ onHostelAdded }) {
         state: '',
         zip_code: '',
         description: '',
-        price_per_year: '',
+        // ❌ REMOVED: price_per_year
         amenities: '',
         available: true,
         category: 'hostel'
@@ -255,18 +255,6 @@ function AddHostel({ onHostelAdded }) {
                 name="zip_code"
                 value={form.zip_code}
                 onChange={handleChange}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Price per Year (GH₵)"
-                name="price_per_year"
-                type="number"
-                value={form.price_per_year}
-                onChange={handleChange}
-                required
               />
             </Grid>
 
