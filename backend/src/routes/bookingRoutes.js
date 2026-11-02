@@ -12,16 +12,12 @@ const SmsTemplates = require('../templates/smsTemplates');
 router.post('/', auth, async (req, res) => {
     try {
         const { hostel_id, room_id, phone_number, room_type, guests } = req.body;
-        
-        // ✅ Catch the price whether it is named total_price or price
-        const finalPrice = parseFloat(req.body.total_price || req.body.price || 0);
         const userId = req.userId;
 
         console.log('--- NEW BOOKING ATTEMPT ---');
-        console.log('User:', userId);
-        console.log('Price Received:', finalPrice);
+        console.log('Body received:', req.body);
 
-        // Validations
+        // Validations for required fields (excluding price for now)
         if (!hostel_id) {
             return res.status(400).json({ error: 'Hostel ID is required' });
         }
@@ -31,13 +27,10 @@ router.post('/', auth, async (req, res) => {
         if (!room_type) {
             return res.status(400).json({ error: 'Room type is required' });
         }
-        if (!finalPrice || finalPrice <= 0) {
-            return res.status(400).json({ error: 'Total price is required and must be greater than 0' });
-        }
 
         // Get hostel
         const hostel = await pool.query(
-            'SELECT id, name, location FROM hostels WHERE id = $1',
+            'SELECT id, name, location, price_per_year FROM hostels WHERE id = $1',
             [hostel_id]
         );
         if (hostel.rows.length === 0) {
@@ -45,6 +38,27 @@ router.post('/', auth, async (req, res) => {
         }
 
         const hostelData = hostel.rows[0];
+
+        // ✅ Catch the price whether it is named total_price or price
+        let finalPrice = parseFloat(req.body.total_price || req.body.price || 0);
+
+        // ✅ FALLBACK: If frontend sent 0, calculate it from the database!
+        if (!finalPrice || finalPrice <= 0) {
+            console.log('Price was missing or 0, calculating fallback...');
+            
+            if (room_id) {
+                const roomResult = await pool.query('SELECT price_1_in_room FROM rooms WHERE id = $1', [room_id]);
+                if (roomResult.rows.length > 0) {
+                    finalPrice = parseFloat(roomResult.rows[0].price_1_in_room) || 0;
+                }
+            }
+            
+            // If still 0, use the hostel's base price
+            if (finalPrice <= 0) {
+                finalPrice = parseFloat(hostelData.price_per_year) || 0;
+            }
+        }
+
         const guestsCount = guests || 1;
         const pricePerMonth = finalPrice / 12;
         
