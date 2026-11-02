@@ -11,11 +11,15 @@ const SmsTemplates = require('../templates/smsTemplates');
 // ============================================
 router.post('/', auth, async (req, res) => {
     try {
-        // ✅ 1. Destructure the new total_price and room_id from frontend
-        const { hostel_id, room_id, phone_number, room_type, total_price, guests } = req.body;
+        // 1. Accept both total_price and price from frontend
+        const { hostel_id, room_id, phone_number, room_type, total_price, price, guests } = req.body;
         const userId = req.userId;
 
+        // Use whichever price was sent
+        const bookingPrice = total_price || price;
+
         console.log(' Creating booking for user:', userId);
+        console.log(' Price received:', bookingPrice);
 
         // Validations
         if (!hostel_id) {
@@ -27,11 +31,11 @@ router.post('/', auth, async (req, res) => {
         if (!room_type) {
             return res.status(400).json({ error: 'Room type is required' });
         }
-        if (!total_price) {
+        if (!bookingPrice) {
             return res.status(400).json({ error: 'Total price is required' });
         }
 
-        // Get hostel (we still need the name for SMS)
+        // Get hostel
         const hostel = await pool.query(
             'SELECT id, name, location FROM hostels WHERE id = $1',
             [hostel_id]
@@ -42,15 +46,15 @@ router.post('/', auth, async (req, res) => {
 
         const hostelData = hostel.rows[0];
         
-        // ✅ 2. Trust the total_price sent from the frontend
-        const finalPrice = parseFloat(total_price);
+        // Trust the exact price sent from frontend
+        const finalPrice = parseFloat(bookingPrice);
         const guestsCount = guests || 1;
-        const pricePerMonth = finalPrice / 12; // Just for reference if needed
+        const pricePerMonth = finalPrice / 12;
         
         const today = new Date().toISOString().split('T')[0];
         const oneYearLater = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-        // ✅ 3. Insert using the exact finalPrice
+        // Insert using the exact finalPrice
         const result = await pool.query(
             `INSERT INTO bookings 
              (user_id, hostel_id, room_id, phone_number, room_type, guests, 
@@ -63,18 +67,9 @@ router.post('/', auth, async (req, res) => {
 
         const booking = result.rows[0];
 
-        // ✅ 4. Decrease room availability (Optional but recommended)
-        if (room_id) {
-            await pool.query(
-                'UPDATE rooms SET available = GREATEST(available - 1, 0) WHERE id = $1',
-                [room_id]
-            );
-        }
-
-        // Send SMS to ADMIN only (user gets SMS after admin confirms)
+        // Send SMS to ADMIN only
         try {
             const smsService = new SmsService();
-
             const userResult = await pool.query(
                 'SELECT full_name, phone, email FROM users WHERE id = $1',
                 [userId]
@@ -83,7 +78,6 @@ router.post('/', auth, async (req, res) => {
 
             const adminPhone = process.env.ADMIN_PHONE;
             if (adminPhone) {
-                // Update this template to accept the booking object which now has the correct price
                 const adminMessage = SmsTemplates.adminNotification(booking, user, hostelData);
                 await smsService.sendSms(adminPhone, adminMessage);
                 console.log('Admin SMS sent:', adminPhone);
