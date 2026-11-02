@@ -11,15 +11,15 @@ const SmsTemplates = require('../templates/smsTemplates');
 // ============================================
 router.post('/', auth, async (req, res) => {
     try {
-        // 1. Accept both total_price and price from frontend
-        const { hostel_id, room_id, phone_number, room_type, total_price, price, guests } = req.body;
+        const { hostel_id, room_id, phone_number, room_type, guests } = req.body;
+        
+        // ✅ Catch the price whether it is named total_price or price
+        const finalPrice = parseFloat(req.body.total_price || req.body.price || 0);
         const userId = req.userId;
 
-        // Use whichever price was sent
-        const bookingPrice = total_price || price;
-
-        console.log(' Creating booking for user:', userId);
-        console.log(' Price received:', bookingPrice);
+        console.log('--- NEW BOOKING ATTEMPT ---');
+        console.log('User:', userId);
+        console.log('Price Received:', finalPrice);
 
         // Validations
         if (!hostel_id) {
@@ -31,8 +31,8 @@ router.post('/', auth, async (req, res) => {
         if (!room_type) {
             return res.status(400).json({ error: 'Room type is required' });
         }
-        if (!bookingPrice) {
-            return res.status(400).json({ error: 'Total price is required' });
+        if (!finalPrice || finalPrice <= 0) {
+            return res.status(400).json({ error: 'Total price is required and must be greater than 0' });
         }
 
         // Get hostel
@@ -45,9 +45,6 @@ router.post('/', auth, async (req, res) => {
         }
 
         const hostelData = hostel.rows[0];
-        
-        // Trust the exact price sent from frontend
-        const finalPrice = parseFloat(bookingPrice);
         const guestsCount = guests || 1;
         const pricePerMonth = finalPrice / 12;
         
